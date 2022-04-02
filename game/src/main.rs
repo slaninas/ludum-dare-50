@@ -21,7 +21,7 @@ use std::{
 const WIDTH: u32 = 240;
 const HEIGHT: u32 = 160;
 const TILE_SCALE: u32 = 10;
-const HORIZONAL_TILES: u32 = 48;
+const HORIZONTAL_TILES: u32 = 48;
 
 fn main() {
     let event_loop = EventLoop::new();
@@ -82,7 +82,7 @@ fn main() {
                     return;
                 }
                 horizontal_shift += 2.;
-                if horizontal_shift >= (HORIZONAL_TILES * TILE_SCALE) as f32 {
+                if horizontal_shift >= (HORIZONTAL_TILES * TILE_SCALE) as f32 {
                     horizontal_shift = 0.0;
                     let tmp = current_block;
                     current_block = next_block;
@@ -122,10 +122,10 @@ fn draw_tiles(pixels: &mut [u8], blocks: &Vec<BitMap>, blocks_ids: (u32, u32), h
             let index = (y * WIDTH + x) as usize;
             let index_inverted = (y_inverted * WIDTH + x) as usize;
 
-            let block_pixel = if horizontal_shift + x < HORIZONAL_TILES * TILE_SCALE  {
+            let block_pixel = if horizontal_shift + x < HORIZONTAL_TILES * TILE_SCALE  {
                 get_block_color(&blocks[blocks_ids.0 as usize], x + horizontal_shift, y)
             } else {
-                get_block_color(&blocks[blocks_ids.1 as usize], horizontal_shift - HORIZONAL_TILES * TILE_SCALE + x, y)
+                get_block_color(&blocks[blocks_ids.1 as usize], horizontal_shift - HORIZONTAL_TILES * TILE_SCALE + x, y)
             };
 
             pixels[4 * index + 0] = block_pixel[0];
