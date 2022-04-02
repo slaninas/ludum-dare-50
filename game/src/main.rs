@@ -70,6 +70,13 @@ fn main() {
             }
             _ => {}
         }
+
+        if input.update(&event) {
+            if input.key_pressed(VirtualKeyCode::Escape) || input.quit() {
+                *control_flow = ControlFlow::Exit;
+                return;
+            }
+        }
     });
 }
 
