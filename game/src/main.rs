@@ -56,22 +56,27 @@ fn main() {
 
     let mut horizontal_shift = 0f32;
 
+    let mut player = Player::new(40.0, 40.0);
+
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
 
         match event {
             Event::MainEventsCleared => {
+                player.update();
                 draw_tiles(
                     pixels.get_frame(),
                     &blocks,
                     (current_block, next_block),
                     horizontal_shift as u32,
                 );
+                player.draw(pixels.get_frame());
 
                 let elapsed = last_update.elapsed();
                 let diff = frame_time - elapsed.as_millis() as i16;
 
                 if diff > 0 {
+                    println!("sleeping for: {} ms", diff);
                     thread::sleep(Duration::from_millis(diff as u64));
                 }
 
@@ -101,8 +106,45 @@ fn main() {
     });
 }
 
-fn load_block() -> BitMap {
-    BitMap::read("test.bmp").unwrap()
+struct Player {
+    pos_x: f32,
+    pos_y: f32,
+    speed_y: f32,
+    size_x: u16,
+    size_y: u16,
+}
+
+impl Player {
+    fn new(pos_x: f32, pos_y: f32) -> Self {
+        Player {
+            pos_x,
+            pos_y,
+            speed_y: 0.0,
+            size_x: 10,
+            size_y: 10,
+        }
+    }
+
+    fn update(&mut self) {
+        self.pos_y += self.speed_y;
+        self.speed_y += 0.05;
+    }
+
+    fn draw(&self, pixels: &mut [u8]) {
+
+        let index = (self.pos_y as usize * WIDTH as usize + self.pos_x as usize) as usize;
+        println!("pos {} {}, WIDTH {}", self.pos_x, self.pos_y, WIDTH);
+        println!("index {}", index);
+        for y in 0..self.size_y as usize {
+            for x in 0..self.size_x as usize {
+                pixels[4 * (index + y * WIDTH as usize + x) + 0] = 255;
+                pixels[4 * (index + y * WIDTH as usize + x) + 1] = 0;
+                pixels[4 * (index + y * WIDTH as usize + x) + 2] = 0;
+                pixels[4 * (index + y * WIDTH as usize + x) + 3] = 255;
+            }
+        }
+
+    }
 }
 
 fn get_block_color(block: &BitMap, x: u32, y: u32) -> [u8; 4] {
