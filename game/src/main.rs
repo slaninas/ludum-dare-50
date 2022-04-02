@@ -49,7 +49,9 @@ fn main() {
     let mut last_update = Instant::now();
     let frame_time = (1000.0 / 60.0) as i16;
 
-    let mut block = load_block();
+    let mut blocks = vec![BitMap::read("test.bmp").unwrap(), BitMap::read("test2.bmp").unwrap()];
+    let mut current_block = 0;
+    let mut next_block = 1;
 
     let mut horizontal_shift = 0f32;
 
@@ -61,7 +63,7 @@ fn main() {
                 draw_tiles(
                     pixels.get_frame(),
                     &mut rng,
-                    &block,
+                    &blocks[0],
                     horizontal_shift as u32,
                 );
 
@@ -79,6 +81,12 @@ fn main() {
                     return;
                 }
                 horizontal_shift += 1.;
+                if horizontal_shift >= WIDTH as f32 {
+                    horizontal_shift = 0.0;
+                    let tmp = current_block;
+                    current_block = next_block;
+                    next_block = tmp;
+                }
             }
             _ => {}
         }
