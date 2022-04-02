@@ -50,9 +50,9 @@ fn main() {
     let mut last_update = Instant::now();
     let frame_time = (1000.0 / 60.0) as i16;
 
-    let mut blocks = vec![BitMap::read("test.bmp").unwrap(), BitMap::read("test2.bmp").unwrap()];
+    let mut blocks = vec![BitMap::read("test3.bmp").unwrap(), BitMap::read("test2.bmp").unwrap()];
     let mut current_block = 0;
-    let mut next_block = 1;
+    let mut next_block = 0;
 
     let mut horizontal_shift = 0f32;
 
