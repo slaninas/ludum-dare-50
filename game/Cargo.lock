@@ -351,6 +351,7 @@ version = "0.1.0"
 dependencies = [
  "pixels",
  "rand",
+ "rustbitmap",
  "winit",
  "winit_input_helper",
 ]
@@ -922,6 +923,12 @@ name = "renderdoc-sys"
 version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f1382d1f0a252c4bf97dc20d979a2fdd05b024acd7c2ed0f7595d7817666a157"
+
+[[package]]
+name = "rustbitmap"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "47d3a52b234d7db1aab69522b2efddf700fedca545a6eac58648724aefa211be"
 
 [[package]]
 name = "rustc-hash"

@@ -9,6 +9,8 @@ use winit::{
 
 use winit_input_helper::WinitInputHelper;
 
+use rustbitmap::bitmap::image::BitMap;
+
 use rand::{rngs::ThreadRng, Rng};
 use std::{
     thread,
@@ -45,13 +47,15 @@ fn main() {
     let mut last_update = Instant::now();
     let frame_time = (1000.0 / 60.0) as i16;
 
+    let block = load_block();
+
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
 
         match event {
             Event::MainEventsCleared => {
                 // println!("draw");
-                draw(pixels.get_frame(), &mut rng);
+                draw(pixels.get_frame(), &mut rng, &block);
 
                 let elapsed = last_update.elapsed();
                 let diff = frame_time - elapsed.as_millis() as i16;
@@ -80,15 +84,25 @@ fn main() {
     });
 }
 
-fn draw(pixels: &mut [u8], rng: &mut ThreadRng) {
+fn load_block() -> BitMap {
+    BitMap::read("test.bmp").unwrap()
+}
+
+fn draw(pixels: &mut [u8], rng: &mut ThreadRng, block: &BitMap) {
     let total_pixels = pixels.len();
+    let block_pixels = block.get_pixels();
+    assert!(total_pixels == 4 * block_pixels.len());
+
     for y in 0..HEIGHT {
         for x in 0..WIDTH {
-            let index = 4 * (y * WIDTH + x) as usize;
-            pixels[index + 0] = rng.gen();
-            pixels[index + 1] = rng.gen();
-            pixels[index + 2] = rng.gen();
-            pixels[index + 3] = 255 as u8;
+            let y_inverted = HEIGHT - y - 1;
+            let index = (y * WIDTH + x) as usize;
+            let index_inverted = (y_inverted * WIDTH + x) as usize;
+
+            pixels[4 * index + 0] = block_pixels[index_inverted].get_red();
+            pixels[4 * index + 1] = block_pixels[index_inverted].get_green();
+            pixels[4 * index + 2] = block_pixels[index_inverted].get_blue();
+            pixels[4 * index + 3] = 255 as u8;
         }
     }
 }

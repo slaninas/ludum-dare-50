@@ -8,5 +8,6 @@ edition = "2021"
 [dependencies]
 pixels = "0.9.0"
 rand = "0.8.5"
+rustbitmap = "0.1.0"
 winit = "0.26.1"
 winit_input_helper = "0.11.1"
