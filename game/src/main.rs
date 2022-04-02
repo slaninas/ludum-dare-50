@@ -20,6 +20,8 @@ use std::{
 // Starting with GBA resolution
 const WIDTH: u32 = 240;
 const HEIGHT: u32 = 160;
+const TILE_SCALE: u32 = 10;
+
 fn main() {
     let event_loop = EventLoop::new();
     let mut input = WinitInputHelper::new();
@@ -88,10 +90,14 @@ fn load_block() -> BitMap {
     BitMap::read("test.bmp").unwrap()
 }
 
+fn get_block_color(block: &BitMap, x: u32, y: u32) -> [u8; 4] {
+    let pixel = block.get_pixel(x / TILE_SCALE, y / TILE_SCALE).unwrap();
+    [pixel.get_red(), pixel.get_green(), pixel.get_blue(), pixel.get_alpha()]
+}
+
 fn draw(pixels: &mut [u8], rng: &mut ThreadRng, block: &BitMap) {
     let total_pixels = pixels.len();
     let block_pixels = block.get_pixels();
-    assert!(total_pixels == 4 * block_pixels.len());
 
     for y in 0..HEIGHT {
         for x in 0..WIDTH {
@@ -99,9 +105,11 @@ fn draw(pixels: &mut [u8], rng: &mut ThreadRng, block: &BitMap) {
             let index = (y * WIDTH + x) as usize;
             let index_inverted = (y_inverted * WIDTH + x) as usize;
 
-            pixels[4 * index + 0] = block_pixels[index_inverted].get_red();
-            pixels[4 * index + 1] = block_pixels[index_inverted].get_green();
-            pixels[4 * index + 2] = block_pixels[index_inverted].get_blue();
+            let block_pixel = get_block_color(&block, x, y);
+
+            pixels[4 * index + 0] = block_pixel[0];
+            pixels[4 * index + 1] = block_pixel[1];
+            pixels[4 * index + 2] = block_pixel[2];
             pixels[4 * index + 3] = 255 as u8;
         }
     }
