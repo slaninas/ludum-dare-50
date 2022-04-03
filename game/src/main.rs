@@ -54,7 +54,7 @@ fn main() {
         let scaled_size = LogicalSize::new(WIDTH as f64 * 4.0, HEIGHT as f64 * 4.0);
 
         WindowBuilder::new()
-            .with_title("Ludum Dare #50")
+            .with_title("Ludum Dare #50: Everything's Fine")
             .with_inner_size(scaled_size)
             .with_min_inner_size(size)
             .with_resizable(false)
