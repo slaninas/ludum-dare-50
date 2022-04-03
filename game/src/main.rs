@@ -136,8 +136,8 @@ struct JumpInfo {
 
 impl Player {
     fn new() -> Self {
-            let tile =  BitMap::read("img.bmp").unwrap();
-            let tile = tile.crop(30, 0, 40, 10).unwrap();
+        let tile = BitMap::read("img.bmp").unwrap();
+        let tile = tile.crop(30, 0, 40, 10).unwrap();
         Player {
             pos_x: 50.0,
             pos_y: 80.0,
@@ -167,7 +167,12 @@ impl Player {
         }
     }
 
-    fn update(&mut self, blocks: &Vec<BitMap>, blocks_ids: (u32, u32), horizontal_shift: f32) -> bool {
+    fn update(
+        &mut self,
+        blocks: &Vec<BitMap>,
+        blocks_ids: (u32, u32),
+        horizontal_shift: f32,
+    ) -> bool {
         let steps = 5;
         let speed_y_fraction = self.speed_y / steps as f32;
 
@@ -228,14 +233,14 @@ impl Player {
             self.pos_x as u32 + self.size_x,
             self.pos_y as u32 + self.size_y / 2,
         );
-        let top_right = ( self.pos_x as u32 + self.size_x, self.pos_y as u32);
+        let top_right = (self.pos_x as u32 + self.size_x, self.pos_y as u32);
         let right_middle_pixel =
             get_pixel(right_middle, blocks, blocks_ids, horizontal_shift as u32);
-        let top_right_pixel =
-            get_pixel(right_middle, blocks, blocks_ids, horizontal_shift as u32);
-        if same_rgb(&right_middle_pixel, &Rgb::new(217, 87, 99)) ||
-         same_rgb(&top_right_pixel, &Rgb::new(217, 87, 99)) {
-             return false;
+        let top_right_pixel = get_pixel(right_middle, blocks, blocks_ids, horizontal_shift as u32);
+        if same_rgb(&right_middle_pixel, &Rgb::new(217, 87, 99))
+            || same_rgb(&top_right_pixel, &Rgb::new(217, 87, 99))
+        {
+            return false;
         }
 
         return true;
@@ -243,7 +248,6 @@ impl Player {
 
     fn draw(&self, pixels: &mut [u8]) {
         draw_tile(pixels, &self.tile, (self.pos_x as i32, self.pos_y as i32));
-
     }
 }
 
