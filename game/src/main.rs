@@ -26,6 +26,13 @@ const HEIGHT: u32 = 160;
 const TILE_SCALE: u32 = 10;
 const HORIZONTAL_TILES: u32 = 48;
 
+#[derive(Debug)]
+enum State {
+    SPLASH,
+    RUNNING,
+    GAMEOVER,
+}
+
 fn main() {
     let event_loop = EventLoop::new();
     let mut input = WinitInputHelper::new();
@@ -63,6 +70,7 @@ fn main() {
     let mut blocks = load_blocks(max_blocks);
 
     let img = BitMap::read("img.bmp").unwrap();
+    let splash_img = BitMap::read("splash.bmp").unwrap();
     let mut current_block = 0;
     let mut next_block = 1;
 
@@ -73,6 +81,8 @@ fn main() {
     let mut highscore = get_highscore();
     let mut score: u64 = 0;
 
+    let mut state = State::SPLASH;
+
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
 
@@ -81,64 +91,93 @@ fn main() {
                 *control_flow = ControlFlow::Exit;
                 save_highscore(std::cmp::max(score, highscore));
                 return;
-            } else if input.key_pressed(VirtualKeyCode::C) || input.key_held(VirtualKeyCode::C) {
-                player.jump();
+            } else if input.key_pressed(VirtualKeyCode::X) || input.key_held(VirtualKeyCode::X) {
+                println!("PRESSED X");
+                match &state {
+                    State::SPLASH => {
+                        state = State::RUNNING;
+                        score = 0;
+                    }
+                    State::RUNNING => player.jump(),
+                    State::GAMEOVER => {
+                        state = State::RUNNING;
+                        score = 0
+                    }
+                }
             }
         }
 
+        println!("state {:?}", state);
         match event {
             Event::MainEventsCleared => {
-                score += 1;
-                let alive = player.update(&blocks, (current_block, next_block), horizontal_shift);
-                if !alive {
-                    panic!("RIP");
-                }
-                clear(pixels.get_frame());
+                match &state {
+                    State::SPLASH => {
+                        draw_image(pixels.get_frame(), &splash_img);
+                        // std::thread::sleep(Duration::from_millis(100));
+                        if pixels.render().map_err(|e| {}).is_err() {
+                            *control_flow = ControlFlow::Exit;
+                            return;
+                        }
+                    },
+                    State::RUNNING => {
+                        score += 1;
+                        let alive =
+                            player.update(&blocks, (current_block, next_block), horizontal_shift);
+                        if !alive {
+                            panic!("RIP");
+                        }
+                        clear(pixels.get_frame());
 
-                draw_tiles(
-                    pixels.get_frame(),
-                    &blocks,
-                    (current_block, next_block),
-                    horizontal_shift as u32,
-                    &img,
-                );
-                player.draw(pixels.get_frame());
+                        draw_tiles(
+                            pixels.get_frame(),
+                            &blocks,
+                            (current_block, next_block),
+                            horizontal_shift as u32,
+                            &img,
+                        );
+                        player.draw(pixels.get_frame());
 
-                draw_score_lives(
-                    score,
-                    highscore,
-                    player.get_lives(),
-                    &img,
-                    pixels.get_frame(),
-                );
+                        draw_score_lives(
+                            score,
+                            highscore,
+                            player.get_lives(),
+                            &img,
+                            pixels.get_frame(),
+                        );
 
-                let elapsed = last_update.elapsed();
-                let diff = frame_time - elapsed.as_millis() as i16;
+                        let elapsed = last_update.elapsed();
+                        let diff = frame_time - elapsed.as_millis() as i16;
 
-                if diff > 0 {
-                    println!("sleeping for: {} ms", diff);
-                    thread::sleep(Duration::from_millis(diff as u64));
-                }
+                        if diff > 0 {
+                            println!("sleeping for: {} ms", diff);
+                            thread::sleep(Duration::from_millis(diff as u64));
+                        }
 
-                last_update = Instant::now();
+                        last_update = Instant::now();
 
-                if pixels.render().map_err(|e| {}).is_err() {
-                    *control_flow = ControlFlow::Exit;
-                    save_highscore(std::cmp::max(score, highscore));
-                    return;
-                }
-                horizontal_shift += 2.;
-                if horizontal_shift >= (HORIZONTAL_TILES * TILE_SCALE) as f32 {
-                    horizontal_shift = 0.0;
-                    current_block = next_block;
-                    // TODO: enable random blocks
-                    next_block = (current_block + 1) % max_blocks;
+                        if pixels.render().map_err(|e| {}).is_err() {
+                            *control_flow = ControlFlow::Exit;
+                            save_highscore(std::cmp::max(score, highscore));
+                            return;
+                        }
+                        horizontal_shift += 2.;
+                        if horizontal_shift >= (HORIZONTAL_TILES * TILE_SCALE) as f32 {
+                            horizontal_shift = 0.0;
+                            current_block = next_block;
+                            // TODO: enable random blocks
+                            next_block = (current_block + 1) % max_blocks;
+                        }
+                    },
+                    State::GAMEOVER => {
+
+                    }
                 }
             }
             _ => {}
         }
     });
 }
+
 
 fn save_highscore(score: u64) {
     let mut file = File::create("highscore.txt").unwrap();
@@ -202,7 +241,9 @@ fn load_blocks(num_maps: u32) -> Vec<BitMap> {
 
     let mut result = vec![];
     for i in 0..num_maps {
-        let mut block = blocks.crop(i * HORIZONTAL_TILES, 0, (i + 1) * HORIZONTAL_TILES, 16).unwrap();
+        let mut block = blocks
+            .crop(i * HORIZONTAL_TILES, 0, (i + 1) * HORIZONTAL_TILES, 16)
+            .unwrap();
         let mut block_inverted = BitMap::new(48, 16);
 
         for y in 0..16 {
@@ -216,7 +257,6 @@ fn load_blocks(num_maps: u32) -> Vec<BitMap> {
     }
 
     result
-
 }
 
 struct Player {
@@ -425,6 +465,21 @@ fn clear(pixels: &mut [u8]) {
         pixels[4 * i + 1] = 175;
         pixels[4 * i + 2] = 175;
         pixels[4 * i + 3] = 255;
+    }
+}
+
+fn draw_image(pixels: &mut[u8], image: &BitMap) {
+    println!("pixels len {}", pixels.len());
+
+    for y in 0..HEIGHT {
+        for x in 0..WIDTH {
+            let index = y * WIDTH + x;
+            let pixel = image.get_pixel(x, y).unwrap();
+            pixels[4 * index as usize + 0] = pixel.get_red();
+            pixels[4 * index as usize + 1] = pixel.get_green();
+            pixels[4 * index as usize + 2] = pixel.get_blue();
+            pixels[4 * index as usize + 3] = 255;
+        }
     }
 }
 
