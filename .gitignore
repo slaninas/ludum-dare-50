@@ -14,3 +14,6 @@ target/
 
 # Vim
 *.swp
+
+# Game's higscore
+game/highscore.txt
