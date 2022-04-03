@@ -1,3 +1,6 @@
+// NOTE: Beware, mess incoming!
+// TODO: Cleanup
+
 use pixels::{Pixels, SurfaceTexture};
 
 use winit::{
