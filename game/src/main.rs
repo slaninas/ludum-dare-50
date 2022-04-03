@@ -78,14 +78,14 @@ fn main() {
         BitMap::read("test3.bmp").unwrap(),
     ];
 
-    let max_blocks = 1;
+    let max_blocks = 4;
     let mut blocks = load_blocks(max_blocks);
 
     let img = BitMap::read("img.bmp").unwrap();
     let splash_img = BitMap::read("splash.bmp").unwrap();
     let gameover_img = BitMap::read("gameover.bmp").unwrap();
     let mut current_block = 0;
-    let mut next_block = get_next_block(max_blocks);
+    let mut next_block = get_next_block(current_block, max_blocks);
 
     let mut horizontal_shift = 0f32;
 
@@ -126,7 +126,7 @@ fn main() {
                         score = 0;
                         player = Player::new();
                         current_block = 0;
-                        next_block = get_next_block(max_blocks);
+                        next_block = get_next_block(current_block, max_blocks);
                         horizontal_shift = 0.0;
                     }
                 }
@@ -167,7 +167,7 @@ fn main() {
 
                                 player = Player::new();
                                 current_block = 9;
-                                next_block = get_next_block(max_blocks);
+                                next_block = get_next_block(current_block, max_blocks);
                                 horizontal_shift = 0.0;
                                 return;
                             }
@@ -378,7 +378,7 @@ impl Player {
             self.speed_y -= 1.5;
         } else if self.jump_info.jumping {
             let elapsed = self.jump_info.jump_start.elapsed().as_millis();
-            if elapsed > 100 && elapsed < 150 {
+            if elapsed > 150 && elapsed < 200 {
                 self.speed_y -= 1.5;
                 self.jump_info.jumping = false;
             }
@@ -454,8 +454,8 @@ impl Player {
     }
 }
 
-fn get_next_block(max_blocks: u32) -> u32 {
-    0
+fn get_next_block(current_block: u32, max_blocks: u32) -> u32 {
+    return (current_block + 1) % max_blocks;
 }
 
 fn get_pixels(
