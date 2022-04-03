@@ -61,9 +61,18 @@ fn main() {
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
 
+        if input.update(&event) {
+            if input.key_pressed(VirtualKeyCode::Escape) || input.quit() {
+                *control_flow = ControlFlow::Exit;
+                return;
+            } else if input.key_pressed(VirtualKeyCode::C) || input.key_held(VirtualKeyCode::C) {
+                player.jump();
+            }
+        }
+
         match event {
             Event::MainEventsCleared => {
-                player.update();
+                player.update(&blocks, (current_block, next_block), horizontal_shift);
                 draw_tiles(
                     pixels.get_frame(),
                     &blocks,
@@ -97,12 +106,6 @@ fn main() {
             _ => {}
         }
 
-        if input.update(&event) {
-            if input.key_pressed(VirtualKeyCode::Escape) || input.quit() {
-                *control_flow = ControlFlow::Exit;
-                return;
-            }
-        }
     });
 }
 
@@ -110,8 +113,10 @@ struct Player {
     pos_x: f32,
     pos_y: f32,
     speed_y: f32,
-    size_x: u16,
-    size_y: u16,
+    size_x: u32,
+    size_y: u32,
+
+    on_ground: bool,
 }
 
 impl Player {
@@ -122,12 +127,32 @@ impl Player {
             speed_y: 0.0,
             size_x: 10,
             size_y: 10,
+
+            on_ground: true,
         }
     }
 
-    fn update(&mut self) {
+    fn jump(&mut self) {
+        if self.on_ground {
+            self.speed_y -= 3.0;
+        }
+    }
+
+    fn update(&mut self, blocks: &Vec<BitMap>, blocks_ids: (u32, u32), horizontal_shift: f32) {
         self.pos_y += self.speed_y;
-        self.speed_y += 0.05;
+
+        let bottom_left = (self.pos_x as u32, self.pos_y as u32 + self.size_y);
+        let bottom_right = (self.pos_x as u32 + self.size_x, self.pos_y as u32 + self.size_y);
+
+        let bottom_left_pixel = get_pixel(bottom_left, blocks, blocks_ids, horizontal_shift as u32);
+        if same_rgb(bottom_left_pixel, 255, 255, 255) {
+            self.pos_y -= self.speed_y;
+            self.speed_y = 0.0;
+            self.on_ground = true;
+        } else {
+            self.speed_y += 0.15;
+            self.on_ground = false;
+        }
     }
 
     fn draw(&self, pixels: &mut [u8]) {
@@ -147,6 +172,10 @@ impl Player {
     }
 }
 
+fn same_rgb(color: [u8; 4], r: u8, g: u8, b: u8) -> bool {
+    color[0] == r && color[1] == g && color[2] == b
+}
+
 fn get_block_color(block: &BitMap, x: u32, y: u32) -> [u8; 4] {
     let pixel = block.get_pixel(x / TILE_SCALE, y / TILE_SCALE).unwrap();
     [
@@ -155,6 +184,21 @@ fn get_block_color(block: &BitMap, x: u32, y: u32) -> [u8; 4] {
         pixel.get_blue(),
         pixel.get_alpha(),
     ]
+}
+
+fn get_pixel(coords: (u32, u32), blocks: &Vec<BitMap>, blocks_ids: (u32, u32), horizontal_shift: u32) -> [u8; 4] {
+            let (x, y) = coords;
+            let y_inverted = HEIGHT - y - 1;
+            let index = (y * WIDTH + x) as usize;
+            let index_inverted = (y_inverted * WIDTH + x) as usize;
+
+            let pixel = if horizontal_shift + x < HORIZONTAL_TILES * TILE_SCALE  {
+                get_block_color(&blocks[blocks_ids.0 as usize], x + horizontal_shift, y)
+            } else {
+                get_block_color(&blocks[blocks_ids.1 as usize], horizontal_shift - HORIZONTAL_TILES * TILE_SCALE + x, y)
+            };
+
+            pixel
 }
 
 fn draw_tiles(pixels: &mut [u8], blocks: &Vec<BitMap>, blocks_ids: (u32, u32), horizontal_shift: u32) {
