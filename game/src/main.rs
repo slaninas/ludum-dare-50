@@ -82,6 +82,12 @@ fn main() {
                     (current_block, next_block),
                     horizontal_shift as u32,
                 );
+                draw_tiles2(
+                    pixels.get_frame(),
+                    &blocks,
+                    (current_block, next_block),
+                    horizontal_shift as u32,
+                );
                 player.draw(pixels.get_frame());
 
                 let elapsed = last_update.elapsed();
@@ -278,6 +284,51 @@ fn draw_tiles(
             pixels[4 * index + 1] = block_pixel[1];
             pixels[4 * index + 2] = block_pixel[2];
             pixels[4 * index + 3] = 255 as u8;
+        }
+    }
+}
+
+fn draw_tiles2(
+    pixels: &mut [u8],
+    blocks: &Vec<BitMap>,
+    blocks_ids: (u32, u32),
+    horizontal_shift: u32,
+) {
+    let mut first_block = true;
+
+    loop {
+        let block = if first_block {
+            &blocks[blocks_ids.0 as usize]
+        } else {
+            &blocks[blocks_ids.1 as usize]
+        };
+
+        for y in 0..16 {
+            for x in 0..48 {
+                let pixel = block.get_pixel(x, y).unwrap();
+                if pixel.get_red() == 255 && pixel.get_green() == 255 && pixel.get_blue() == 255 {
+                    let xx = if first_block {
+                        x as i32 * TILE_SCALE as i32 - horizontal_shift as i32
+                    } else {
+                        x as i32 * TILE_SCALE as i32 + (HORIZONTAL_TILES as i32 * TILE_SCALE as i32 - horizontal_shift as i32)
+                    };
+                    let yy = y as i32 * TILE_SCALE as i32;
+
+                    if xx >= 0 && xx < WIDTH as i32 && yy >= 0 && yy < HEIGHT as i32 {
+                        let surface_index = yy * WIDTH as i32 + xx;
+                        println!("xx {}, yy {}, surface_index {}", xx, yy, surface_index);
+                        pixels[4 * surface_index as usize + 0] = 255;
+                        pixels[4 * surface_index as usize + 1] = 0;
+                        pixels[4 * surface_index as usize + 2] = 0;
+                        pixels[4 * surface_index as usize + 3] = 255;
+                    }
+                }
+            }
+        }
+        if first_block {
+            first_block = false;
+        } else {
+            break;
         }
     }
 }
