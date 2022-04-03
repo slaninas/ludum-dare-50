@@ -73,7 +73,7 @@ fn main() {
     let mut last_update = Instant::now();
     let frame_time = (1000.0 / 60.0) as i16;
 
-    let max_blocks = 4;
+    let max_blocks = 16;
     let blocks = load_blocks(max_blocks);
 
     let img = BitMap::read("img.bmp").unwrap();
@@ -349,7 +349,7 @@ impl Player {
         let tile = tile.crop(30, 0, 40, 10).unwrap();
         Player {
             pos_x: 50.0,
-            pos_y: 80.0,
+            pos_y: 100.0,
             speed_y: 0.0,
             size_x: 10,
             size_y: 10,
@@ -448,7 +448,7 @@ impl Player {
 
 fn get_next_block(current_block: u32, max_blocks: u32, rng: &mut ThreadRng) -> u32 {
     let res = rng.gen_range(0..max_blocks);
-    println!("in get_next_block, generated: {}", res);
+    println!("next {}", res);
     res
 }
 
@@ -537,9 +537,9 @@ impl Rgb {
 
 fn clear(pixels: &mut [u8]) {
     for i in 0..pixels.len() / 4 {
-        pixels[4 * i + 0] = 175;
-        pixels[4 * i + 1] = 175;
-        pixels[4 * i + 2] = 175;
+        pixels[4 * i + 0] = 0;
+        pixels[4 * i + 1] = 0;
+        pixels[4 * i + 2] = 0;
         pixels[4 * i + 3] = 255;
     }
 }
