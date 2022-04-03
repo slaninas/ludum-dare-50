@@ -59,8 +59,11 @@ fn main() {
         BitMap::read("test3.bmp").unwrap(),
     ];
 
+    let max_blocks = 3;
+    let mut blocks = load_blocks(max_blocks);
+
     let img = BitMap::read("img.bmp").unwrap();
-    let mut current_block = 1;
+    let mut current_block = 0;
     let mut next_block = 1;
 
     let mut horizontal_shift = 0f32;
@@ -127,9 +130,9 @@ fn main() {
                 horizontal_shift += 2.;
                 if horizontal_shift >= (HORIZONTAL_TILES * TILE_SCALE) as f32 {
                     horizontal_shift = 0.0;
-                    let tmp = current_block;
                     current_block = next_block;
-                    next_block = tmp;
+                    // TODO: enable random blocks
+                    next_block = (current_block + 1) % max_blocks;
                 }
             }
             _ => {}
@@ -194,6 +197,28 @@ fn draw_score_lives(score: u64, orig_highscore: u64, lives: u8, img: &BitMap, pi
     }
 }
 
+fn load_blocks(num_maps: u32) -> Vec<BitMap> {
+    let blocks = BitMap::read("blocks.bmp").unwrap();
+
+    let mut result = vec![];
+    for i in 0..num_maps {
+        let mut block = blocks.crop(i * HORIZONTAL_TILES, 0, (i + 1) * HORIZONTAL_TILES, 16).unwrap();
+        let mut block_inverted = BitMap::new(48, 16);
+
+        for y in 0..16 {
+            for x in 0..HORIZONTAL_TILES {
+                let pixel = block.get_pixel(x, 16 - y - 1).unwrap();
+                block_inverted.set_pixel(x, y, *pixel);
+            }
+        }
+
+        result.push(block_inverted);
+    }
+
+    result
+
+}
+
 struct Player {
     pos_x: f32,
     pos_y: f32,
@@ -237,7 +262,7 @@ impl Player {
         if self.jump_info.on_ground {
             self.jump_info.jumping = true;
             self.jump_info.jump_start = Instant::now();
-            self.speed_y -= 2.5;
+            self.speed_y -= 1.5;
         } else if self.jump_info.jumping {
             let elapsed = self.jump_info.jump_start.elapsed().as_millis();
             if elapsed > 100 && elapsed < 150 {
