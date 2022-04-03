@@ -56,7 +56,7 @@ fn main() {
 
     let mut horizontal_shift = 0f32;
 
-    let mut player = Player::new(40.0, 40.0);
+    let mut player = Player::new();
 
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
@@ -115,10 +115,10 @@ struct Player {
 }
 
 impl Player {
-    fn new(pos_x: f32, pos_y: f32) -> Self {
+    fn new() -> Self {
         Player {
-            pos_x,
-            pos_y,
+            pos_x: 40.0,
+            pos_y: 80.0,
             speed_y: 0.0,
             size_x: 10,
             size_y: 10,
