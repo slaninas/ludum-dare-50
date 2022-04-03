@@ -58,7 +58,7 @@ fn main() {
 
     let img = BitMap::read("img.bmp").unwrap();
     let mut current_block = 1;
-    let mut next_block = 0;
+    let mut next_block = 1;
 
     let mut horizontal_shift = 0f32;
 
@@ -153,11 +153,11 @@ impl Player {
         if self.jump_info.on_ground {
             self.jump_info.jumping = true;
             self.jump_info.jump_start = Instant::now();
-            self.speed_y -= 0.9;
+            self.speed_y -= 2.0;
         } else if self.jump_info.jumping {
             let elapsed = self.jump_info.jump_start.elapsed().as_millis();
             if elapsed < 150 {
-                self.speed_y -= 0.5;
+                self.speed_y -= 0.2;
             }
         }
     }
