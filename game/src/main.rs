@@ -73,11 +73,6 @@ fn main() {
     let mut last_update = Instant::now();
     let frame_time = (1000.0 / 60.0) as i16;
 
-    let blocks = vec![
-        BitMap::read("test.bmp").unwrap(),
-        BitMap::read("test3.bmp").unwrap(),
-    ];
-
     let max_blocks = 4;
     let blocks = load_blocks(max_blocks);
 
@@ -85,7 +80,7 @@ fn main() {
     let splash_img = BitMap::read("splash.bmp").unwrap();
     let gameover_img = BitMap::read("gameover.bmp").unwrap();
     let mut current_block = 0;
-    let mut next_block = get_next_block(current_block, max_blocks);
+    let mut next_block = get_next_block(current_block, max_blocks, &mut rng);
 
     let mut horizontal_shift = 0f32;
 
@@ -126,7 +121,7 @@ fn main() {
                         score = 0;
                         player = Player::new();
                         current_block = 0;
-                        next_block = get_next_block(current_block, max_blocks);
+                        next_block = get_next_block(current_block, max_blocks, &mut rng);
                         horizontal_shift = 0.0;
                     }
                 }
@@ -167,7 +162,7 @@ fn main() {
 
                                 player = Player::new();
                                 current_block = 9;
-                                next_block = get_next_block(current_block, max_blocks);
+                                next_block = get_next_block(current_block, max_blocks, &mut rng);
                                 horizontal_shift = 0.0;
                                 return;
                             }
@@ -220,8 +215,7 @@ fn main() {
                                 if horizontal_shift >= (HORIZONTAL_TILES * TILE_SCALE) as f32 {
                                     horizontal_shift = 0.0;
                                     current_block = next_block;
-                                    // TODO: enable random blocks
-                                    next_block = (current_block + 1) % max_blocks;
+                                    next_block = get_next_block(current_block, max_blocks, &mut rng);
                                 }
                             },
 
@@ -452,8 +446,10 @@ impl Player {
     }
 }
 
-fn get_next_block(current_block: u32, max_blocks: u32) -> u32 {
-    return (current_block + 1) % max_blocks;
+fn get_next_block(current_block: u32, max_blocks: u32, rng: &mut ThreadRng) -> u32 {
+    let res = rng.gen_range(0..max_blocks);
+    println!("in get_next_block, generated: {}", res);
+    res
 }
 
 fn get_pixels(
