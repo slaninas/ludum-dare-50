@@ -118,7 +118,6 @@ fn main() {
                 match &state {
                     State::SPLASH => {
                         draw_image(pixels.get_frame(), &splash_img);
-                        // std::thread::sleep(Duration::from_millis(100));
                         if pixels.render().map_err(|e| {}).is_err() {
                             *control_flow = ControlFlow::Exit;
                             return;
@@ -190,6 +189,13 @@ fn main() {
                     },
                     State::GAMEOVER => {
                         draw_image(pixels.get_frame(), &gameover_img);
+                            draw_score_lives(
+                                score,
+                                highscore,
+                                0,
+                                &img,
+                                pixels.get_frame(),
+                            );
                         if pixels.render().map_err(|e| {}).is_err() {
                             *control_flow = ControlFlow::Exit;
                             return;
