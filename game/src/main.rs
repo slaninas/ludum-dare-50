@@ -50,7 +50,10 @@ fn main() {
     let mut last_update = Instant::now();
     let frame_time = (1000.0 / 60.0) as i16;
 
-    let mut blocks = vec![BitMap::read("test.bmp").unwrap(), BitMap::read("test3.bmp").unwrap()];
+    let mut blocks = vec![
+        BitMap::read("test.bmp").unwrap(),
+        BitMap::read("test3.bmp").unwrap(),
+    ];
     let mut current_block = 1;
     let mut next_block = 0;
 
@@ -105,7 +108,6 @@ fn main() {
             }
             _ => {}
         }
-
     });
 }
 
@@ -156,26 +158,50 @@ impl Player {
     }
 
     fn update(&mut self, blocks: &Vec<BitMap>, blocks_ids: (u32, u32), horizontal_shift: f32) {
-        self.pos_y += self.speed_y;
+        let steps = 5;
+        let speed_y_fraction = self.speed_y / steps as f32;
 
-        let bottom_left = (self.pos_x as u32, self.pos_y as u32 + self.size_y);
-        let bottom_right = (self.pos_x as u32 + self.size_x, self.pos_y as u32 + self.size_y);
+        let mut vertical_hit = false;
+        for step in 0..steps {
+            self.pos_y += speed_y_fraction;
 
-        let bottom_left_pixel = get_pixel(bottom_left, blocks, blocks_ids, horizontal_shift as u32);
-        let bottom_right_pixel = get_pixel(bottom_right, blocks, blocks_ids, horizontal_shift as u32);
-        if same_rgb(bottom_left_pixel, 255, 255, 255) || same_rgb(bottom_right_pixel, 255, 255, 255) {
-            self.pos_y -= self.speed_y;
-            self.speed_y = 0.0;
-            self.jump_info.on_ground = true;
-            self.jump_info.jumping = false;
-        } else {
-            self.speed_y += 0.15;
-            self.jump_info.on_ground = false;
+            // Vertical
+            let bottom_left = (self.pos_x as u32, self.pos_y as u32 + self.size_y);
+            let bottom_right = (
+                self.pos_x as u32 + self.size_x,
+                self.pos_y as u32 + self.size_y,
+            );
+
+            let bottom_left_pixel =
+                get_pixel(bottom_left, blocks, blocks_ids, horizontal_shift as u32);
+            let bottom_right_pixel =
+                get_pixel(bottom_right, blocks, blocks_ids, horizontal_shift as u32);
+
+            if same_rgb(bottom_left_pixel, 255, 255, 255)
+                || same_rgb(bottom_right_pixel, 255, 255, 255)
+            {
+                self.pos_y -= speed_y_fraction;
+                self.speed_y = 0.0;
+                self.jump_info.on_ground = true;
+                self.jump_info.jumping = false;
+                break;
+            } else {
+                self.jump_info.on_ground = false;
+                self.speed_y += 0.15 / steps as f32;
+            }
+        }
+        let right_middle = (
+            self.pos_x as u32 + self.size_x,
+            self.pos_y as u32 + self.size_y / 2,
+        );
+        let right_middle_pixel =
+            get_pixel(right_middle, blocks, blocks_ids, horizontal_shift as u32);
+        if same_rgb(right_middle_pixel, 255, 255, 255) {
+            panic!("RIP");
         }
     }
 
     fn draw(&self, pixels: &mut [u8]) {
-
         let index = (self.pos_y as usize * WIDTH as usize + self.pos_x as usize) as usize;
         for y in 0..self.size_y as usize {
             for x in 0..self.size_x as usize {
@@ -185,7 +211,6 @@ impl Player {
                 pixels[4 * (index + y * WIDTH as usize + x) + 3] = 255;
             }
         }
-
     }
 }
 
@@ -203,32 +228,50 @@ fn get_block_color(block: &BitMap, x: u32, y: u32) -> [u8; 4] {
     ]
 }
 
-fn get_pixel(coords: (u32, u32), blocks: &Vec<BitMap>, blocks_ids: (u32, u32), horizontal_shift: u32) -> [u8; 4] {
-            let (x, y) = coords;
-            let y_inverted = HEIGHT - y - 1;
-            let index = (y * WIDTH + x) as usize;
-            let index_inverted = (y_inverted * WIDTH + x) as usize;
+fn get_pixel(
+    coords: (u32, u32),
+    blocks: &Vec<BitMap>,
+    blocks_ids: (u32, u32),
+    horizontal_shift: u32,
+) -> [u8; 4] {
+    let (x, y) = coords;
+    let y_inverted = HEIGHT - y - 1;
+    let index = (y * WIDTH + x) as usize;
+    let index_inverted = (y_inverted * WIDTH + x) as usize;
 
-            let pixel = if horizontal_shift + x < HORIZONTAL_TILES * TILE_SCALE  {
-                get_block_color(&blocks[blocks_ids.0 as usize], x + horizontal_shift, y)
-            } else {
-                get_block_color(&blocks[blocks_ids.1 as usize], horizontal_shift - HORIZONTAL_TILES * TILE_SCALE + x, y)
-            };
+    let pixel = if horizontal_shift + x < HORIZONTAL_TILES * TILE_SCALE {
+        get_block_color(&blocks[blocks_ids.0 as usize], x + horizontal_shift, y)
+    } else {
+        get_block_color(
+            &blocks[blocks_ids.1 as usize],
+            horizontal_shift - HORIZONTAL_TILES * TILE_SCALE + x,
+            y,
+        )
+    };
 
-            pixel
+    pixel
 }
 
-fn draw_tiles(pixels: &mut [u8], blocks: &Vec<BitMap>, blocks_ids: (u32, u32), horizontal_shift: u32) {
+fn draw_tiles(
+    pixels: &mut [u8],
+    blocks: &Vec<BitMap>,
+    blocks_ids: (u32, u32),
+    horizontal_shift: u32,
+) {
     for y in 0..HEIGHT {
         for x in 0..WIDTH {
             let y_inverted = HEIGHT - y - 1;
             let index = (y * WIDTH + x) as usize;
             let index_inverted = (y_inverted * WIDTH + x) as usize;
 
-            let block_pixel = if horizontal_shift + x < HORIZONTAL_TILES * TILE_SCALE  {
+            let block_pixel = if horizontal_shift + x < HORIZONTAL_TILES * TILE_SCALE {
                 get_block_color(&blocks[blocks_ids.0 as usize], x + horizontal_shift, y)
             } else {
-                get_block_color(&blocks[blocks_ids.1 as usize], horizontal_shift - HORIZONTAL_TILES * TILE_SCALE + x, y)
+                get_block_color(
+                    &blocks[blocks_ids.1 as usize],
+                    horizontal_shift - HORIZONTAL_TILES * TILE_SCALE + x,
+                    y,
+                )
             };
 
             pixels[4 * index + 0] = block_pixel[0];
