@@ -55,7 +55,7 @@ fn main() {
         BitMap::read("test3.bmp").unwrap(),
     ];
 
-    let tile = BitMap::read("tile.bmp").unwrap();
+    let img = BitMap::read("img.bmp").unwrap();
     let mut current_block = 1;
     let mut next_block = 0;
 
@@ -84,7 +84,7 @@ fn main() {
                     &blocks,
                     (current_block, next_block),
                     horizontal_shift as u32,
-                    &tile,
+                    &img,
                 );
                 player.draw(pixels.get_frame());
 
@@ -256,12 +256,12 @@ fn get_pixel(
     pixel
 }
 
-fn clear(pixels: &mut[u8]) {
+fn clear(pixels: &mut [u8]) {
     for i in 0..pixels.len() / 4 {
-        pixels[4* i + 0] = 175;
-        pixels[4* i + 1] = 175;
-        pixels[4* i + 2] = 175;
-        pixels[4* i + 3] = 255;
+        pixels[4 * i + 0] = 175;
+        pixels[4 * i + 1] = 175;
+        pixels[4 * i + 2] = 175;
+        pixels[4 * i + 3] = 255;
     }
 }
 
@@ -278,8 +278,13 @@ fn draw_tile(pixels: &mut [u8], tile: &BitMap, coords: (i32, i32)) {
             }
 
             let surface_index = y * WIDTH as i32 + x;
-            let tile_pixel = tile.get_pixel(x as u32 - start_x as u32, y as u32 - start_y as u32).unwrap();
-            if tile_pixel.get_red() == 132 && tile_pixel.get_green() == 126 && tile_pixel.get_blue() == 135 {
+            let tile_pixel = tile
+                .get_pixel(x as u32 - start_x as u32, y as u32 - start_y as u32)
+                .unwrap();
+            if tile_pixel.get_red() == 132
+                && tile_pixel.get_green() == 126
+                && tile_pixel.get_blue() == 135
+            {
                 continue;
             }
             pixels[4 * surface_index as usize + 0] = tile_pixel.get_red();
@@ -288,7 +293,6 @@ fn draw_tile(pixels: &mut [u8], tile: &BitMap, coords: (i32, i32)) {
             pixels[4 * surface_index as usize + 3] = 255;
         }
     }
-
 }
 
 fn draw_tiles2(
@@ -296,8 +300,11 @@ fn draw_tiles2(
     blocks: &Vec<BitMap>,
     blocks_ids: (u32, u32),
     horizontal_shift: u32,
-    tile: &BitMap,
+    img: &BitMap,
 ) {
+    let tile = img.crop(0, 0, 10, 10).unwrap();
+    let spike = img.crop(10, 0, 20, 10).unwrap();
+    let speedup = img.crop(20, 0, 30, 10).unwrap();
     let mut first_block = true;
 
     loop {
@@ -310,18 +317,28 @@ fn draw_tiles2(
         for y in 0..16 {
             for x in 0..48 {
                 let pixel = block.get_pixel(x, y).unwrap();
+                let xx = if first_block {
+                    x as i32 * TILE_SCALE as i32 - horizontal_shift as i32
+                } else {
+                    x as i32 * TILE_SCALE as i32
+                        + (HORIZONTAL_TILES as i32 * TILE_SCALE as i32 - horizontal_shift as i32)
+                };
+                let yy = y as i32 * TILE_SCALE as i32;
+
                 if pixel.get_red() == 255 && pixel.get_green() == 255 && pixel.get_blue() == 255 {
-                    let xx = if first_block {
-                        x as i32 * TILE_SCALE as i32 - horizontal_shift as i32
-                    } else {
-                        x as i32 * TILE_SCALE as i32
-                            + (HORIZONTAL_TILES as i32 * TILE_SCALE as i32
-                                - horizontal_shift as i32)
-                    };
-                    let yy = y as i32 * TILE_SCALE as i32;
-                    draw_tile(pixels, tile, (xx, yy));
-                }
+                    draw_tile(pixels, &tile, (xx, yy));
+                } else if pixel.get_red() == 217
+                    && pixel.get_green() == 87
+                    && pixel.get_blue() == 99
+                {
+                    draw_tile(pixels, &spike, (xx, yy));
+                } else if pixel.get_red() == 99
+                    && pixel.get_green() == 155
+                    && pixel.get_blue() == 255
+                    {
+                    draw_tile(pixels, &speedup, (xx, yy));
             }
+        }
         }
         if first_block {
             first_block = false;
