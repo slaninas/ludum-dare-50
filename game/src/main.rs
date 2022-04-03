@@ -310,18 +310,20 @@ fn draw_tiles2(
                     let xx = if first_block {
                         x as i32 * TILE_SCALE as i32 - horizontal_shift as i32
                     } else {
-                        x as i32 * TILE_SCALE as i32 + (HORIZONTAL_TILES as i32 * TILE_SCALE as i32 - horizontal_shift as i32)
+                        x as i32 * TILE_SCALE as i32
+                            + (HORIZONTAL_TILES as i32 * TILE_SCALE as i32
+                                - horizontal_shift as i32)
                     };
                     let yy = y as i32 * TILE_SCALE as i32;
 
-                    if xx >= 0 && xx < WIDTH as i32 && yy >= 0 && yy < HEIGHT as i32 {
-                        let surface_index = yy * WIDTH as i32 + xx;
-                        println!("xx {}, yy {}, surface_index {}", xx, yy, surface_index);
-                        pixels[4 * surface_index as usize + 0] = 255;
-                        pixels[4 * surface_index as usize + 1] = 0;
-                        pixels[4 * surface_index as usize + 2] = 0;
-                        pixels[4 * surface_index as usize + 3] = 255;
+                    if xx < 0 || xx >= WIDTH as i32 || yy < 0 || yy >= HEIGHT as i32 {
+                        continue;
                     }
+                    let surface_index = yy * WIDTH as i32 + xx;
+                    pixels[4 * surface_index as usize + 0] = 255;
+                    pixels[4 * surface_index as usize + 1] = 0;
+                    pixels[4 * surface_index as usize + 2] = 0;
+                    pixels[4 * surface_index as usize + 3] = 255;
                 }
             }
         }
