@@ -240,86 +240,6 @@ fn main() {
     });
 }
 
-fn save_highscore(score: u64) {
-    let mut file = File::create("highscore.txt").unwrap();
-    writeln!(&mut file, "{}", score).unwrap();
-}
-
-fn get_highscore() -> u64 {
-    match std::fs::read_to_string("highscore.txt") {
-        Ok(s) => s.split_whitespace().collect::<Vec<_>>()[0]
-            .parse::<u64>()
-            .unwrap(),
-        Err(_) => return 0,
-    }
-}
-
-fn draw_score_lives(score: u64, orig_highscore: u64, lives: u8, img: &BitMap, pixels: &mut [u8]) {
-    let numericals = (score as f64).log10() as u64 + 1;
-    let end = 22 * TILE_SCALE as u64;
-
-    for i in 0..numericals {
-        let remainer = (score / 10u64.pow(i as u32)) % 10;
-        let tile = img
-            .crop(
-                (100 + 10 * remainer) as u32,
-                0,
-                (100 + 10 * (remainer + 1)) as u32,
-                10,
-            )
-            .unwrap();
-
-        draw_tile(pixels, &tile, (end as i32 - 10 * i as i32, 21 as i32));
-    }
-
-    let highscore = std::cmp::max(score, orig_highscore);
-
-    let numericals = (highscore as f64).log10() as u64 + 1;
-    let end = 22 * TILE_SCALE as u64;
-
-    for i in 0..numericals {
-        let remainer = (highscore / 10u64.pow(i as u32)) % 10;
-        let tile = img
-            .crop(
-                (200 + 10 * remainer) as u32,
-                0,
-                (200 + 10 * (remainer + 1)) as u32,
-                10,
-            )
-            .unwrap();
-
-        draw_tile(pixels, &tile, (end as i32 - 10 * i as i32, 10 as i32));
-    }
-
-    let heart = img.crop(40, 0, 50, 10).unwrap();
-    for i in 0..lives {
-        draw_tile(pixels, &heart, (end as i32 - 10 * i as i32, 32 as i32));
-    }
-}
-
-fn load_blocks(num_maps: u32) -> Vec<BitMap> {
-    let blocks = BitMap::read("blocks.bmp").unwrap();
-
-    let mut result = vec![];
-    for i in 0..num_maps {
-        let block = blocks
-            .crop(i * HORIZONTAL_TILES, 0, (i + 1) * HORIZONTAL_TILES, 16)
-            .unwrap();
-        let mut block_inverted = BitMap::new(48, 16);
-
-        for y in 0..16 {
-            for x in 0..HORIZONTAL_TILES {
-                let pixel = block.get_pixel(x, 16 - y - 1).unwrap();
-                block_inverted.set_pixel(x, y, *pixel).unwrap();
-            }
-        }
-
-        result.push(block_inverted);
-    }
-
-    result
-}
-
 struct Player {
     pos_x: f32,
     pos_y: f32,
@@ -433,6 +353,86 @@ impl Player {
     }
 }
 
+
+fn save_highscore(score: u64) {
+    let mut file = File::create("highscore.txt").unwrap();
+    writeln!(&mut file, "{}", score).unwrap();
+}
+
+fn get_highscore() -> u64 {
+    match std::fs::read_to_string("highscore.txt") {
+        Ok(s) => s.split_whitespace().collect::<Vec<_>>()[0]
+            .parse::<u64>()
+            .unwrap(),
+        Err(_) => return 0,
+    }
+}
+
+fn draw_score_lives(score: u64, orig_highscore: u64, lives: u8, img: &BitMap, pixels: &mut [u8]) {
+    let numericals = (score as f64).log10() as u64 + 1;
+    let end = 22 * TILE_SCALE as u64;
+
+    for i in 0..numericals {
+        let remainer = (score / 10u64.pow(i as u32)) % 10;
+        let tile = img
+            .crop(
+                (100 + 10 * remainer) as u32,
+                0,
+                (100 + 10 * (remainer + 1)) as u32,
+                10,
+            )
+            .unwrap();
+
+        draw_tile(pixels, &tile, (end as i32 - 10 * i as i32, 21 as i32));
+    }
+
+    let highscore = std::cmp::max(score, orig_highscore);
+
+    let numericals = (highscore as f64).log10() as u64 + 1;
+    let end = 22 * TILE_SCALE as u64;
+
+    for i in 0..numericals {
+        let remainer = (highscore / 10u64.pow(i as u32)) % 10;
+        let tile = img
+            .crop(
+                (200 + 10 * remainer) as u32,
+                0,
+                (200 + 10 * (remainer + 1)) as u32,
+                10,
+            )
+            .unwrap();
+
+        draw_tile(pixels, &tile, (end as i32 - 10 * i as i32, 10 as i32));
+    }
+
+    let heart = img.crop(40, 0, 50, 10).unwrap();
+    for i in 0..lives {
+        draw_tile(pixels, &heart, (end as i32 - 10 * i as i32, 32 as i32));
+    }
+}
+
+fn load_blocks(num_maps: u32) -> Vec<BitMap> {
+    let blocks = BitMap::read("blocks.bmp").unwrap();
+
+    let mut result = vec![];
+    for i in 0..num_maps {
+        let block = blocks
+            .crop(i * HORIZONTAL_TILES, 0, (i + 1) * HORIZONTAL_TILES, 16)
+            .unwrap();
+        let mut block_inverted = BitMap::new(48, 16);
+
+        for y in 0..16 {
+            for x in 0..HORIZONTAL_TILES {
+                let pixel = block.get_pixel(x, 16 - y - 1).unwrap();
+                block_inverted.set_pixel(x, y, *pixel).unwrap();
+            }
+        }
+
+        result.push(block_inverted);
+    }
+
+    result
+}
 fn get_next_block(_current_block: u32, max_blocks: u32, rng: &mut ThreadRng) -> u32 {
     rng.gen_range(0..max_blocks)
 }
