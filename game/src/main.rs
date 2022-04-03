@@ -36,6 +36,7 @@ fn main() {
             .with_title("Ludum Dare #50")
             .with_inner_size(scaled_size)
             .with_min_inner_size(size)
+            .with_resizable(false)
             .build(&event_loop)
             .unwrap()
     };
