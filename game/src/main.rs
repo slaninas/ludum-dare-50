@@ -323,7 +323,11 @@ fn draw_tiles2(
                     x as i32 * TILE_SCALE as i32
                         + (HORIZONTAL_TILES as i32 * TILE_SCALE as i32 - horizontal_shift as i32)
                 };
-                let yy = y as i32 * TILE_SCALE as i32;
+                let mut yy = y as i32 * TILE_SCALE as i32;
+
+                if xx < 30 {
+                    yy += 30 - xx;
+                }
 
                 if pixel.get_red() == 255 && pixel.get_green() == 255 && pixel.get_blue() == 255 {
                     draw_tile(pixels, &tile, (xx, yy));
