@@ -192,11 +192,11 @@ impl Player {
         if self.jump_info.on_ground {
             self.jump_info.jumping = true;
             self.jump_info.jump_start = Instant::now();
-            self.speed_y -= 2.0;
+            self.speed_y -= 2.5;
         } else if self.jump_info.jumping {
             let elapsed = self.jump_info.jump_start.elapsed().as_millis();
             if elapsed > 100 && elapsed < 150 {
-                self.speed_y -= 1.0;
+                self.speed_y -= 1.5;
                 self.jump_info.jumping = false;
             }
         }
