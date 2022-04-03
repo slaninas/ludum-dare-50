@@ -136,7 +136,7 @@ struct JumpInfo {
 impl Player {
     fn new() -> Self {
         Player {
-            pos_x: 40.0,
+            pos_x: 50.0,
             pos_y: 80.0,
             speed_y: 0.0,
             size_x: 10,
@@ -163,11 +163,21 @@ impl Player {
         }
     }
 
-    fn update(&mut self, blocks: &Vec<BitMap>, blocks_ids: (u32, u32), horizontal_shift: f32) {
+    fn update(&mut self, blocks: &Vec<BitMap>, blocks_ids: (u32, u32), horizontal_shift: f32) -> bool {
         let steps = 5;
         let speed_y_fraction = self.speed_y / steps as f32;
 
         self.pos_x -= 0.01;
+
+        if self.pos_x < 0.0 {
+            return false;
+        }
+
+        if self.pos_x < 30.0 {
+            self.pos_y += 3.0;
+            self.pos_x -= 3.0;
+            return true;
+        }
 
         let mut vertical_hit = false;
         for step in 0..steps {
@@ -221,8 +231,10 @@ impl Player {
             get_pixel(right_middle, blocks, blocks_ids, horizontal_shift as u32);
         if same_rgb(&right_middle_pixel, &Rgb::new(217, 87, 99)) ||
          same_rgb(&top_right_pixel, &Rgb::new(217, 87, 99)) {
-            panic!("RIP");
+             return false;
         }
+
+        return true;
     }
 
     fn draw(&self, pixels: &mut [u8]) {
@@ -364,8 +376,8 @@ fn draw_tiles(
                 };
                 let mut yy = y as i32 * TILE_SCALE as i32;
 
-                if xx < 30 {
-                    yy += 30 - xx;
+                if xx < 25 {
+                    yy += 25 - xx;
                 }
 
                 if same_rgb(&pixel, &Rgb::new(255, 255, 255)) {
