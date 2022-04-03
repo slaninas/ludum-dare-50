@@ -125,14 +125,20 @@ fn main() {
     });
 }
 
-
 fn draw_score_lives(score: u64, lives: u8, img: &BitMap, pixels: &mut [u8]) {
     let numericals = (score as f64).log10() as u64 + 1;
     let end = 22 * TILE_SCALE as u64;
 
     for i in 0..numericals {
         let remainer = (score / 10u64.pow(i as u32)) % 10;
-        let tile = img.crop((100 + 10 * remainer) as u32, 0, (100 + 10 * (remainer + 1)) as u32, 10).unwrap();
+        let tile = img
+            .crop(
+                (100 + 10 * remainer) as u32,
+                0,
+                (100 + 10 * (remainer + 1)) as u32,
+                10,
+            )
+            .unwrap();
 
         draw_tile(pixels, &tile, (end as i32 - 10 * i as i32, 10 as i32));
     }
@@ -141,8 +147,6 @@ fn draw_score_lives(score: u64, lives: u8, img: &BitMap, pixels: &mut [u8]) {
     for i in 0..lives {
         draw_tile(pixels, &heart, (end as i32 - 10 * i as i32, 21 as i32));
     }
-
-
 }
 
 struct Player {
@@ -219,46 +223,30 @@ impl Player {
             return true;
         }
 
-        let mut vertical_hit = false;
         for step in 0..steps {
             self.pos_y += speed_y_fraction;
 
             // Vertical
-            let bottom_left = (self.pos_x as u32, self.pos_y as u32 + self.size_y);
-            let bottom_right = (
-                self.pos_x as u32 + self.size_x,
-                self.pos_y as u32 + self.size_y,
+            let corners = get_corners(
+                (self.pos_x as u32, self.pos_y as u32),
+                (self.size_x, self.size_y),
             );
+            let pixels = get_pixels(&corners, blocks, blocks_ids, horizontal_shift as u32);
 
-            let bottom_left_pixel =
-                get_pixel(bottom_left, blocks, blocks_ids, horizontal_shift as u32);
-            let bottom_right_pixel =
-                get_pixel(bottom_right, blocks, blocks_ids, horizontal_shift as u32);
-
-            if (is_solid(&bottom_left_pixel)
-                || is_solid(&bottom_right_pixel) )&& self.speed_y >= 0.0
-            {
+            if pixels.iter().any(|p| is_solid(&p)) {
                 self.pos_y -= speed_y_fraction;
                 self.speed_y = 0.0;
                 self.jump_info.on_ground = true;
                 self.jump_info.jumping = false;
 
-                if same_rgb(&bottom_left_pixel, &Rgb::new(99, 155, 255))
-                    || same_rgb(&bottom_right_pixel, &Rgb::new(99, 155, 255))
-                {
+                if pixels.iter().any(|p| same_rgb(&p, &Rgb::new(99, 155, 255))) {
                     self.pos_x += 5.0;
                     if self.pos_x >= 60.0 {
                         self.pos_x = 59.0;
                     }
+                } else if pixels.iter().any(|p| same_rgb(&p, &Rgb::new(217, 87, 99))) {
+                    return false;
                 }
-                else if same_rgb(&bottom_left_pixel, &Rgb::new(217, 87, 99))
-                    || same_rgb(&bottom_right_pixel, &Rgb::new(217, 87, 99))
-                {
-                    self.pos_x -= 5.0;
-                    self.speed_y -= 1.5;
-                    self.lives -= 1;
-                }
-
                 break;
             } else {
                 self.jump_info.on_ground = false;
@@ -274,9 +262,34 @@ impl Player {
     }
 
     fn get_lives(&self) -> u8 {
-        ((self.pos_x as u32  - 30) / 3 + 1) as u8
+        ((self.pos_x as u32 - 30) / 3 + 1) as u8
+    }
+}
+
+fn get_pixels(
+    positions: &Vec<(u32, u32)>,
+    blocks: &Vec<BitMap>,
+    blocks_ids: (u32, u32),
+    horizontal_shift: u32,
+) -> Vec<Rgb> {
+    let mut results = vec![];
+    for coords in positions {
+        results.push(get_pixel(*coords, blocks, blocks_ids, horizontal_shift));
     }
 
+    results
+}
+
+fn get_corners(coords: (u32, u32), size: (u32, u32)) -> Vec<(u32, u32)> {
+    let (x, y) = coords;
+    let (width, height) = size;
+
+    let top_left = (x, y);
+    let top_right = (x + width, y);
+    let bottom_left = (x, y + height);
+    let bottom_right = (x + width, y + height);
+
+    vec![top_left, top_right, bottom_left, bottom_right]
 }
 
 fn is_solid(rgb: &Rgb) -> bool {
