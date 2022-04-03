@@ -30,7 +30,7 @@ fn main() {
 
     let window = {
         let size = LogicalSize::new(WIDTH as f64, HEIGHT as f64);
-        let scaled_size = LogicalSize::new(WIDTH as f64 * 6.0, HEIGHT as f64 * 6.0);
+        let scaled_size = LogicalSize::new(WIDTH as f64 * 4.0, HEIGHT as f64 * 4.0);
 
         WindowBuilder::new()
             .with_title("Ludum Dare #50")
