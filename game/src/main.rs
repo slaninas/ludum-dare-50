@@ -125,6 +125,7 @@ struct Player {
     size_y: u32,
 
     jump_info: JumpInfo,
+    tile: BitMap,
 }
 
 struct JumpInfo {
@@ -135,6 +136,8 @@ struct JumpInfo {
 
 impl Player {
     fn new() -> Self {
+            let tile =  BitMap::read("img.bmp").unwrap();
+            let tile = tile.crop(30, 0, 40, 10).unwrap();
         Player {
             pos_x: 50.0,
             pos_y: 80.0,
@@ -147,6 +150,7 @@ impl Player {
                 jumping: false,
                 jump_start: Instant::now(),
             },
+            tile,
         }
     }
 
@@ -238,15 +242,8 @@ impl Player {
     }
 
     fn draw(&self, pixels: &mut [u8]) {
-        let index = (self.pos_y as usize * WIDTH as usize + self.pos_x as usize) as usize;
-        for y in 0..self.size_y as usize {
-            for x in 0..self.size_x as usize {
-                pixels[4 * (index + y * WIDTH as usize + x) + 0] = 255;
-                pixels[4 * (index + y * WIDTH as usize + x) + 1] = 0;
-                pixels[4 * (index + y * WIDTH as usize + x) + 2] = 0;
-                pixels[4 * (index + y * WIDTH as usize + x) + 3] = 255;
-            }
-        }
+        draw_tile(pixels, &self.tile, (self.pos_x as i32, self.pos_y as i32));
+
     }
 }
 
@@ -330,7 +327,7 @@ fn draw_tile(pixels: &mut [u8], tile: &BitMap, coords: (i32, i32)) {
 
             let surface_index = y * WIDTH as i32 + x;
             let tile_pixel = tile
-                .get_pixel(x as u32 - start_x as u32, y as u32 - start_y as u32)
+                .get_pixel(x as u32 - start_x as u32, 9 - (y as u32 - start_y as u32))
                 .unwrap();
             if tile_pixel.get_red() == 132
                 && tile_pixel.get_green() == 126
