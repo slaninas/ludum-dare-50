@@ -50,8 +50,8 @@ fn main() {
     let mut last_update = Instant::now();
     let frame_time = (1000.0 / 60.0) as i16;
 
-    let mut blocks = vec![BitMap::read("test3.bmp").unwrap(), BitMap::read("test2.bmp").unwrap()];
-    let mut current_block = 0;
+    let mut blocks = vec![BitMap::read("test.bmp").unwrap(), BitMap::read("test3.bmp").unwrap()];
+    let mut current_block = 1;
     let mut next_block = 0;
 
     let mut horizontal_shift = 0f32;
@@ -116,7 +116,13 @@ struct Player {
     size_x: u32,
     size_y: u32,
 
+    jump_info: JumpInfo,
+}
+
+struct JumpInfo {
     on_ground: bool,
+    jumping: bool,
+    jump_start: Instant,
 }
 
 impl Player {
@@ -128,13 +134,24 @@ impl Player {
             size_x: 10,
             size_y: 10,
 
-            on_ground: true,
+            jump_info: JumpInfo {
+                on_ground: false,
+                jumping: false,
+                jump_start: Instant::now(),
+            },
         }
     }
 
     fn jump(&mut self) {
-        if self.on_ground {
-            self.speed_y -= 3.0;
+        if self.jump_info.on_ground {
+            self.jump_info.jumping = true;
+            self.jump_info.jump_start = Instant::now();
+            self.speed_y -= 0.9;
+        } else if self.jump_info.jumping {
+            let elapsed = self.jump_info.jump_start.elapsed().as_millis();
+            if elapsed < 150 {
+                self.speed_y -= 0.5;
+            }
         }
     }
 
@@ -149,18 +166,17 @@ impl Player {
         if same_rgb(bottom_left_pixel, 255, 255, 255) || same_rgb(bottom_right_pixel, 255, 255, 255) {
             self.pos_y -= self.speed_y;
             self.speed_y = 0.0;
-            self.on_ground = true;
+            self.jump_info.on_ground = true;
+            self.jump_info.jumping = false;
         } else {
             self.speed_y += 0.15;
-            self.on_ground = false;
+            self.jump_info.on_ground = false;
         }
     }
 
     fn draw(&self, pixels: &mut [u8]) {
 
         let index = (self.pos_y as usize * WIDTH as usize + self.pos_x as usize) as usize;
-        println!("pos {} {}, WIDTH {}", self.pos_x, self.pos_y, WIDTH);
-        println!("index {}", index);
         for y in 0..self.size_y as usize {
             for x in 0..self.size_x as usize {
                 pixels[4 * (index + y * WIDTH as usize + x) + 0] = 255;
