@@ -28,14 +28,21 @@ const WIDTH: u32 = 240;
 const HEIGHT: u32 = 160;
 const TILE_SCALE: u32 = 10;
 const HORIZONTAL_TILES: u32 = 48;
-const MAX_PLAYER_X: u32 =  59;
-const MIN_PLAYER_X: u32 =  30;
+const MAX_PLAYER_X: u32 = 59;
+const MIN_PLAYER_X: u32 = 30;
 
 #[derive(Debug)]
 enum State {
     SPLASH,
     RUNNING,
     GAMEOVER,
+}
+
+#[derive(Debug)]
+enum Update {
+    NOTHING,
+    SPEEDUP,
+    DEAD,
 }
 
 fn main() {
@@ -84,20 +91,15 @@ fn main() {
 
     let mut player = Player::new();
 
-    let (_stream, stream_handle) = OutputStream::try_default().unwrap();
-    // let file = File::open("speedup.wav").unwrap();
-    // let source = Decoder::new(file).unwrap();
-    // let source = Decoder::new(file).unwrap();
-    // let converted = source.convert_samples();
 
     let (_stream, stream_handle) = OutputStream::try_default().unwrap();
     let sink = Sink::try_new(&stream_handle).unwrap();
 
-    // Add a dummy source of the sake of the example.
     let source = SineWave::new(440.0)
         .take_duration(Duration::from_secs_f32(1.25))
         .amplify(0.20);
     let mut last_played = Instant::now();
+    let mut last_speedup_sound = Instant::now();
 
     let mut highscore = get_highscore();
     let mut score: u64 = 0;
@@ -113,7 +115,6 @@ fn main() {
                 save_highscore(std::cmp::max(score, highscore));
                 return;
             } else if input.key_pressed(VirtualKeyCode::X) || input.key_held(VirtualKeyCode::X) {
-                println!("PRESSED X");
                 match &state {
                     State::SPLASH => {
                         state = State::RUNNING;
@@ -132,7 +133,6 @@ fn main() {
             }
         }
 
-        println!("state {:?}", state);
         match event {
             Event::MainEventsCleared => {
                 match &state {
@@ -145,76 +145,95 @@ fn main() {
                     }
                     State::RUNNING => {
                         score += 1;
-                        let alive =
+                        let update_ret =
                             player.update(&blocks, (current_block, next_block), horizontal_shift);
-                        if !alive {
-                            state = State::GAMEOVER;
-                            std::thread::sleep(Duration::from_millis(300));
-                            draw_image(pixels.get_frame(), &gameover_img);
-                            if pixels.render().map_err(|e| {}).is_err() {
-                                *control_flow = ControlFlow::Exit;
-                                return;
-                            }
-                            // std::thread::sleep(Duration::from_millis(1000));
-                            save_highscore(std::cmp::max(score, highscore));
-                            println!("HERE");
+                        match update_ret {
 
-                            player = Player::new();
-                            current_block = 9;
-                            next_block = get_next_block(max_blocks);
-                            horizontal_shift = 0.0;
-                            return;
-                        } else {
-                            let sound_duration = 2000 as u64;
-                            if last_played.elapsed().as_millis() as u64 > sound_duration {
-                                let freq_mult = (player.pos_x - MIN_PLAYER_X as f32) / (MAX_PLAYER_X as f32 - MIN_PLAYER_X as f32);
-                                println!("freq_mult: {}", freq_mult);
-                                let source = SineWave::new(1000.0 * (1.0-freq_mult).sqrt())
-                                    .take_duration(Duration::from_millis(100))
-                                    .amplify(0.20);
+                            Update::DEAD => {
+                                state = State::GAMEOVER;
+
+                                let gameover_file = File::open("gameover.wav").unwrap();
+                                let source = Decoder::new(gameover_file).unwrap();
+
                                 sink.append(source);
-                                last_played = Instant::now();
-                            }
-                            clear(pixels.get_frame());
-
-                            draw_tiles(
-                                pixels.get_frame(),
-                                &blocks,
-                                (current_block, next_block),
-                                horizontal_shift as u32,
-                                &img,
-                            );
-                            player.draw(pixels.get_frame());
-
-                            draw_score_lives(
-                                score,
-                                highscore,
-                                player.get_lives(),
-                                &img,
-                                pixels.get_frame(),
-                            );
-
-                            let elapsed = last_update.elapsed();
-                            let diff = frame_time - elapsed.as_millis() as i16;
-
-                            if diff > 0 {
-                                println!("sleeping for: {} ms", diff);
-                                thread::sleep(Duration::from_millis(diff as u64));
-                            }
-
-                            last_update = Instant::now();
-
-                            if pixels.render().map_err(|e| {}).is_err() {
-                                *control_flow = ControlFlow::Exit;
+                                std::thread::sleep(Duration::from_millis(300));
+                                draw_image(pixels.get_frame(), &gameover_img);
+                                if pixels.render().map_err(|e| {}).is_err() {
+                                    *control_flow = ControlFlow::Exit;
+                                    return;
+                                }
+                                // std::thread::sleep(Duration::from_millis(1000));
                                 save_highscore(std::cmp::max(score, highscore));
+
+                                player = Player::new();
+                                current_block = 9;
+                                next_block = get_next_block(max_blocks);
+                                horizontal_shift = 0.0;
                                 return;
                             }
-                            horizontal_shift += 2.;
-                            if horizontal_shift >= (HORIZONTAL_TILES * TILE_SCALE) as f32 {
-                                horizontal_shift = 0.0;
-                                current_block = next_block;
-                                // TODO: enable random blocks
-                                next_block = (current_block + 1) % max_blocks;
+                            Update::NOTHING => {
+                                let sound_duration = 2000 as u64;
+                                if last_played.elapsed().as_millis() as u64 > sound_duration {
+                                    let freq_mult = (player.pos_x - MIN_PLAYER_X as f32)
+                                        / (MAX_PLAYER_X as f32 - MIN_PLAYER_X as f32);
+                                    let source = SineWave::new(1000.0 * (1.0 - freq_mult).sqrt())
+                                        .take_duration(Duration::from_millis(100))
+                                        .amplify(0.20);
+                                    sink.append(source);
+                                    last_played = Instant::now();
+                                }
+                                clear(pixels.get_frame());
+
+                                draw_tiles(
+                                    pixels.get_frame(),
+                                    &blocks,
+                                    (current_block, next_block),
+                                    horizontal_shift as u32,
+                                    &img,
+                                );
+                                player.draw(pixels.get_frame());
+
+                                draw_score_lives(
+                                    score,
+                                    highscore,
+                                    player.get_lives(),
+                                    &img,
+                                    pixels.get_frame(),
+                                );
+
+                                let elapsed = last_update.elapsed();
+                                let diff = frame_time - elapsed.as_millis() as i16;
+
+                                if diff > 0 {
+                                    // println!("sleeping for: {} ms", diff);
+                                    thread::sleep(Duration::from_millis(diff as u64));
+                                }
+
+                                last_update = Instant::now();
+
+                                if pixels.render().map_err(|e| {}).is_err() {
+                                    *control_flow = ControlFlow::Exit;
+                                    save_highscore(std::cmp::max(score, highscore));
+                                    return;
+                                }
+                                horizontal_shift += 2.;
+                                if horizontal_shift >= (HORIZONTAL_TILES * TILE_SCALE) as f32 {
+                                    horizontal_shift = 0.0;
+                                    current_block = next_block;
+                                    // TODO: enable random blocks
+                                    next_block = (current_block + 1) % max_blocks;
+                                }
+                            },
+
+                            Update::SPEEDUP => {
+                                if last_speedup_sound.elapsed().as_millis() > 500 {
+                                    let file = File::open("speedup.wav").unwrap();
+                                    let source = Decoder::new(file).unwrap();
+                                    println!("Appending speedup");
+                                    sink.append(source);
+                                    last_speedup_sound = Instant::now();
+                                }
+
                             }
                         }
                     }
@@ -371,25 +390,25 @@ impl Player {
         blocks: &Vec<BitMap>,
         blocks_ids: (u32, u32),
         horizontal_shift: f32,
-    ) -> bool {
+    ) -> Update {
         let steps = 5;
         let speed_y_fraction = self.speed_y / steps as f32;
 
         self.pos_x -= 0.01;
 
         if self.pos_x <= 0.0 {
-            return false;
+            return Update::NOTHING;
         }
-        println!("pos_y + size_y {}", self.pos_y as u32 + self.size_y);
         if self.pos_y as u32 + self.size_y as u32 >= HEIGHT - 6 {
-            return false;
+            return Update::DEAD;
         }
 
-        if self.pos_x < MIN_PLAYER_X as f32 {
-            self.pos_y += 3.0;
-            self.pos_x -= 3.0;
-            return true;
-        }
+        // if self.pos_x < MIN_PLAYER_X as f32 {
+            // self.pos_y += 3.0;
+            // self.pos_x -= 3.0;
+            // return Update::NOTHING;
+        // }
+        //
 
         for step in 0..steps {
             self.pos_y += speed_y_fraction;
@@ -412,8 +431,9 @@ impl Player {
                     if self.pos_x > MAX_PLAYER_X as f32 {
                         self.pos_x = MAX_PLAYER_X as f32;
                     }
+                    return Update::SPEEDUP;
                 } else if pixels.iter().any(|p| same_rgb(&p, &Rgb::new(217, 87, 99))) {
-                    return false;
+                    return Update::DEAD;
                 }
                 break;
             } else {
@@ -422,7 +442,7 @@ impl Player {
             }
         }
 
-        return true;
+        Update::NOTHING
     }
 
     fn draw(&self, pixels: &mut [u8]) {
@@ -531,7 +551,6 @@ fn clear(pixels: &mut [u8]) {
 }
 
 fn draw_image(pixels: &mut [u8], image: &BitMap) {
-    println!("pixels len {}", pixels.len());
 
     for y in 0..HEIGHT {
         for x in 0..WIDTH {
