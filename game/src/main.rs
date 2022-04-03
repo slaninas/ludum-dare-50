@@ -80,7 +80,8 @@ fn main() {
             Event::MainEventsCleared => {
                 player.update(&blocks, (current_block, next_block), horizontal_shift);
                 clear(pixels.get_frame());
-                draw_tiles2(
+
+                draw_tiles(
                     pixels.get_frame(),
                     &blocks,
                     (current_block, next_block),
@@ -260,9 +261,7 @@ struct Rgb {
 
 impl Rgb {
     fn new(red: u8, green: u8, blue: u8) -> Self {
-        Self {
-            red, green,blue
-        }
+        Self { red, green, blue }
     }
 
     fn from_rgba(rgba: &rustbitmap::bitmap::rgba::Rgba) -> Self {
@@ -313,7 +312,7 @@ fn draw_tile(pixels: &mut [u8], tile: &BitMap, coords: (i32, i32)) {
     }
 }
 
-fn draw_tiles2(
+fn draw_tiles(
     pixels: &mut [u8],
     blocks: &Vec<BitMap>,
     blocks_ids: (u32, u32),
@@ -334,7 +333,7 @@ fn draw_tiles2(
 
         for y in 0..16 {
             for x in 0..48 {
-                let pixel = block.get_pixel(x, y).unwrap();
+                let pixel = Rgb::from_rgba(block.get_pixel(x, y).unwrap());
                 let xx = if first_block {
                     x as i32 * TILE_SCALE as i32 - horizontal_shift as i32
                 } else {
@@ -347,20 +346,14 @@ fn draw_tiles2(
                     yy += 30 - xx;
                 }
 
-                if pixel.get_red() == 255 && pixel.get_green() == 255 && pixel.get_blue() == 255 {
+                if same_rgb(&pixel, &Rgb::new(255, 255, 255)) {
                     draw_tile(pixels, &tile, (xx, yy));
-                } else if pixel.get_red() == 217
-                    && pixel.get_green() == 87
-                    && pixel.get_blue() == 99
-                {
+                } else if same_rgb(&pixel, &Rgb::new(217, 87, 99)) {
                     draw_tile(pixels, &spike, (xx, yy));
-                } else if pixel.get_red() == 99
-                    && pixel.get_green() == 155
-                    && pixel.get_blue() == 255
-                    {
+                } else if same_rgb(&pixel, &Rgb::new(99, 155, 255)) {
                     draw_tile(pixels, &speedup, (xx, yy));
+                }
             }
-        }
         }
         if first_block {
             first_block = false;
