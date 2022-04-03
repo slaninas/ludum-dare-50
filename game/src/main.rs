@@ -157,7 +157,7 @@ impl Player {
             self.speed_y -= 2.0;
         } else if self.jump_info.jumping {
             let elapsed = self.jump_info.jump_start.elapsed().as_millis();
-            if elapsed < 150 {
+            if elapsed < 250 {
                 self.speed_y -= 0.2;
             }
         }
@@ -166,6 +166,8 @@ impl Player {
     fn update(&mut self, blocks: &Vec<BitMap>, blocks_ids: (u32, u32), horizontal_shift: f32) {
         let steps = 5;
         let speed_y_fraction = self.speed_y / steps as f32;
+
+        self.pos_x -= 0.01;
 
         let mut vertical_hit = false;
         for step in 0..steps {
@@ -177,19 +179,31 @@ impl Player {
                 self.pos_x as u32 + self.size_x,
                 self.pos_y as u32 + self.size_y,
             );
+            let top_left = (self.pos_x as u32, self.pos_y as u32);
+            let top_right = (self.pos_x as u32 + self.size_x, self.pos_y as u32);
 
             let bottom_left_pixel =
                 get_pixel(bottom_left, blocks, blocks_ids, horizontal_shift as u32);
             let bottom_right_pixel =
                 get_pixel(bottom_right, blocks, blocks_ids, horizontal_shift as u32);
+            let top_left_pixel = get_pixel(top_left, blocks, blocks_ids, horizontal_shift as u32);
+            let top_right_pixel = get_pixel(top_right, blocks, blocks_ids, horizontal_shift as u32);
 
-            if same_rgb(&bottom_left_pixel, &Rgb::new(255, 255, 255))
-                || same_rgb(&bottom_right_pixel, &Rgb::new(255, 255, 255))
+            if is_solid(&bottom_left_pixel)
+                || is_solid(&bottom_right_pixel)
+                || is_solid(&top_left_pixel)
+                || is_solid(&top_right_pixel)
             {
                 self.pos_y -= speed_y_fraction;
                 self.speed_y = 0.0;
                 self.jump_info.on_ground = true;
                 self.jump_info.jumping = false;
+
+                if same_rgb(&bottom_left_pixel, &Rgb::new(99, 155, 255))
+                    || same_rgb(&bottom_right_pixel, &Rgb::new(99, 155, 255))
+                {
+                    self.pos_x += 5.0;
+                }
                 break;
             } else {
                 self.jump_info.on_ground = false;
@@ -200,9 +214,13 @@ impl Player {
             self.pos_x as u32 + self.size_x,
             self.pos_y as u32 + self.size_y / 2,
         );
+        let top_right = ( self.pos_x as u32 + self.size_x, self.pos_y as u32);
         let right_middle_pixel =
             get_pixel(right_middle, blocks, blocks_ids, horizontal_shift as u32);
-        if same_rgb(&right_middle_pixel, &Rgb::new(255, 255, 255)) {
+        let top_right_pixel =
+            get_pixel(right_middle, blocks, blocks_ids, horizontal_shift as u32);
+        if same_rgb(&right_middle_pixel, &Rgb::new(217, 87, 99)) ||
+         same_rgb(&top_right_pixel, &Rgb::new(217, 87, 99)) {
             panic!("RIP");
         }
     }
@@ -218,6 +236,10 @@ impl Player {
             }
         }
     }
+}
+
+fn is_solid(rgb: &Rgb) -> bool {
+    same_rgb(&rgb, &Rgb::new(255, 255, 255)) || same_rgb(&rgb, &Rgb::new(99, 155, 255))
 }
 
 fn same_rgb(rgb: &Rgb, rgb2: &Rgb) -> bool {
