@@ -10,7 +10,6 @@ use winit::{
 use winit_input_helper::WinitInputHelper;
 
 use rustbitmap::bitmap::image::BitMap;
-use rustbitmap::bitmap::rgba::Rgba;
 
 use rodio::source::{SineWave, Source};
 use rodio::{Decoder, OutputStream, Sink};
@@ -18,7 +17,7 @@ use rodio::{Decoder, OutputStream, Sink};
 use rand::{rngs::ThreadRng, Rng};
 use std::{
     fs::File,
-    io::{BufReader, Write},
+    io::Write,
     thread,
     time::{Duration, Instant},
 };
@@ -90,9 +89,6 @@ fn main() {
     let (_stream, stream_handle) = OutputStream::try_default().unwrap();
     let sink = Sink::try_new(&stream_handle).unwrap();
 
-    let source = SineWave::new(440.0)
-        .take_duration(Duration::from_secs_f32(1.25))
-        .amplify(0.20);
     let mut last_played = Instant::now();
     let mut last_speedup_sound = Instant::now();
 
@@ -133,7 +129,7 @@ fn main() {
                 match &state {
                     State::SPLASH => {
                         draw_image(pixels.get_frame(), &splash_img);
-                        if pixels.render().map_err(|e| {}).is_err() {
+                        if pixels.render().is_err() {
                             *control_flow = ControlFlow::Exit;
                             return;
                         }
@@ -153,7 +149,7 @@ fn main() {
                                 sink.append(source);
                                 std::thread::sleep(Duration::from_millis(300));
                                 draw_image(pixels.get_frame(), &gameover_img);
-                                if pixels.render().map_err(|e| {}).is_err() {
+                                if pixels.render().is_err() {
                                     *control_flow = ControlFlow::Exit;
                                     return;
                                 }
@@ -200,13 +196,12 @@ fn main() {
                                 let diff = frame_time - elapsed.as_millis() as i16;
 
                                 if diff > 0 {
-                                    // println!("sleeping for: {} ms", diff);
                                     thread::sleep(Duration::from_millis(diff as u64));
                                 }
 
                                 last_update = Instant::now();
 
-                                if pixels.render().map_err(|e| {}).is_err() {
+                                if pixels.render().is_err() {
                                     *control_flow = ControlFlow::Exit;
                                     save_highscore(std::cmp::max(score, highscore));
                                     return;
@@ -223,7 +218,6 @@ fn main() {
                                 if last_speedup_sound.elapsed().as_millis() > 500 {
                                     let file = File::open("speedup.wav").unwrap();
                                     let source = Decoder::new(file).unwrap();
-                                    println!("Appending speedup");
                                     sink.append(source);
                                     last_speedup_sound = Instant::now();
                                 }
@@ -234,7 +228,7 @@ fn main() {
                     State::GAMEOVER => {
                         draw_image(pixels.get_frame(), &gameover_img);
                         draw_score_lives(score, highscore, 0, &img, pixels.get_frame());
-                        if pixels.render().map_err(|e| {}).is_err() {
+                        if pixels.render().is_err() {
                             *control_flow = ControlFlow::Exit;
                             return;
                         }
@@ -395,14 +389,7 @@ impl Player {
             return Update::DEAD;
         }
 
-        // if self.pos_x < MIN_PLAYER_X as f32 {
-            // self.pos_y += 3.0;
-            // self.pos_x -= 3.0;
-            // return Update::NOTHING;
-        // }
-        //
-
-        for step in 0..steps {
+        for _step in 0..steps {
             self.pos_y += speed_y_fraction;
 
             // Vertical
@@ -446,10 +433,8 @@ impl Player {
     }
 }
 
-fn get_next_block(current_block: u32, max_blocks: u32, rng: &mut ThreadRng) -> u32 {
-    let res = rng.gen_range(0..max_blocks);
-    println!("next {}", res);
-    res
+fn get_next_block(_current_block: u32, max_blocks: u32, rng: &mut ThreadRng) -> u32 {
+    rng.gen_range(0..max_blocks)
 }
 
 fn get_pixels(
@@ -498,9 +483,6 @@ fn get_pixel(
     horizontal_shift: u32,
 ) -> Rgb {
     let (x, y) = coords;
-    let y_inverted = HEIGHT - y - 1;
-    let index = (y * WIDTH + x) as usize;
-    let index_inverted = (y_inverted * WIDTH + x) as usize;
 
     let pixel = if horizontal_shift + x < HORIZONTAL_TILES * TILE_SCALE {
         get_block_color(&blocks[blocks_ids.0 as usize], x + horizontal_shift, y)
