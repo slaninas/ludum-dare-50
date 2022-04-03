@@ -63,6 +63,7 @@ fn main() {
     let mut horizontal_shift = 0f32;
 
     let mut player = Player::new();
+    let mut score: u64 = 0;
 
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
@@ -78,6 +79,7 @@ fn main() {
 
         match event {
             Event::MainEventsCleared => {
+                score += 1;
                 let alive = player.update(&blocks, (current_block, next_block), horizontal_shift);
                 if !alive {
                     panic!("RIP");
@@ -92,6 +94,8 @@ fn main() {
                     &img,
                 );
                 player.draw(pixels.get_frame());
+
+                draw_score(score, &img, pixels.get_frame());
 
                 let elapsed = last_update.elapsed();
                 let diff = frame_time - elapsed.as_millis() as i16;
@@ -118,6 +122,21 @@ fn main() {
             _ => {}
         }
     });
+}
+
+fn draw_score(score: u64, img: &BitMap, pixels: &mut [u8]) {
+    let numericals = (score as f64).log10() as u64 + 1;
+    let end = 22 * TILE_SCALE as u64;
+
+    for i in 0..numericals {
+        let remainer = (score / 10u64.pow(i as u32)) % 10;
+        let tile = img.crop((100 + 10 * remainer) as u32, 0, (100 + 10 * (remainer + 1)) as u32, 10).unwrap();
+
+
+        draw_tile(pixels, &tile, (end as i32 - 10 * i as i32, 10 as i32));
+
+    }
+
 }
 
 struct Player {
