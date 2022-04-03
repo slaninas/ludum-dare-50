@@ -10,6 +10,7 @@ use winit::{
 use winit_input_helper::WinitInputHelper;
 
 use rustbitmap::bitmap::image::BitMap;
+use rustbitmap::bitmap::rgba::Rgba;
 
 use rand::{rngs::ThreadRng, Rng};
 use std::{
@@ -181,8 +182,8 @@ impl Player {
             let bottom_right_pixel =
                 get_pixel(bottom_right, blocks, blocks_ids, horizontal_shift as u32);
 
-            if same_rgb(bottom_left_pixel, 255, 255, 255)
-                || same_rgb(bottom_right_pixel, 255, 255, 255)
+            if same_rgb(&bottom_left_pixel, &Rgb::new(255, 255, 255))
+                || same_rgb(&bottom_right_pixel, &Rgb::new(255, 255, 255))
             {
                 self.pos_y -= speed_y_fraction;
                 self.speed_y = 0.0;
@@ -200,7 +201,7 @@ impl Player {
         );
         let right_middle_pixel =
             get_pixel(right_middle, blocks, blocks_ids, horizontal_shift as u32);
-        if same_rgb(right_middle_pixel, 255, 255, 255) {
+        if same_rgb(&right_middle_pixel, &Rgb::new(255, 255, 255)) {
             panic!("RIP");
         }
     }
@@ -218,18 +219,13 @@ impl Player {
     }
 }
 
-fn same_rgb(color: [u8; 4], r: u8, g: u8, b: u8) -> bool {
-    color[0] == r && color[1] == g && color[2] == b
+fn same_rgb(rgb: &Rgb, rgb2: &Rgb) -> bool {
+    rgb.red == rgb2.red && rgb.green == rgb2.green && rgb.blue == rgb2.blue
 }
 
-fn get_block_color(block: &BitMap, x: u32, y: u32) -> [u8; 4] {
+fn get_block_color(block: &BitMap, x: u32, y: u32) -> Rgb {
     let pixel = block.get_pixel(x / TILE_SCALE, y / TILE_SCALE).unwrap();
-    [
-        pixel.get_red(),
-        pixel.get_green(),
-        pixel.get_blue(),
-        pixel.get_alpha(),
-    ]
+    Rgb::from_rgba(&pixel)
 }
 
 fn get_pixel(
@@ -237,7 +233,7 @@ fn get_pixel(
     blocks: &Vec<BitMap>,
     blocks_ids: (u32, u32),
     horizontal_shift: u32,
-) -> [u8; 4] {
+) -> Rgb {
     let (x, y) = coords;
     let y_inverted = HEIGHT - y - 1;
     let index = (y * WIDTH + x) as usize;
@@ -254,6 +250,28 @@ fn get_pixel(
     };
 
     pixel
+}
+
+struct Rgb {
+    red: u8,
+    green: u8,
+    blue: u8,
+}
+
+impl Rgb {
+    fn new(red: u8, green: u8, blue: u8) -> Self {
+        Self {
+            red, green,blue
+        }
+    }
+
+    fn from_rgba(rgba: &rustbitmap::bitmap::rgba::Rgba) -> Self {
+        Self {
+            red: rgba.get_red(),
+            green: rgba.get_green(),
+            blue: rgba.get_blue(),
+        }
+    }
 }
 
 fn clear(pixels: &mut [u8]) {
