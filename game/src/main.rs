@@ -54,6 +54,8 @@ fn main() {
         BitMap::read("test.bmp").unwrap(),
         BitMap::read("test3.bmp").unwrap(),
     ];
+
+    let tile = BitMap::read("tile.bmp").unwrap();
     let mut current_block = 1;
     let mut next_block = 0;
 
@@ -76,17 +78,13 @@ fn main() {
         match event {
             Event::MainEventsCleared => {
                 player.update(&blocks, (current_block, next_block), horizontal_shift);
-                draw_tiles(
-                    pixels.get_frame(),
-                    &blocks,
-                    (current_block, next_block),
-                    horizontal_shift as u32,
-                );
+                clear(pixels.get_frame());
                 draw_tiles2(
                     pixels.get_frame(),
                     &blocks,
                     (current_block, next_block),
                     horizontal_shift as u32,
+                    &tile,
                 );
                 player.draw(pixels.get_frame());
 
@@ -258,34 +256,39 @@ fn get_pixel(
     pixel
 }
 
-fn draw_tiles(
-    pixels: &mut [u8],
-    blocks: &Vec<BitMap>,
-    blocks_ids: (u32, u32),
-    horizontal_shift: u32,
-) {
-    for y in 0..HEIGHT {
-        for x in 0..WIDTH {
-            let y_inverted = HEIGHT - y - 1;
-            let index = (y * WIDTH + x) as usize;
-            let index_inverted = (y_inverted * WIDTH + x) as usize;
+fn clear(pixels: &mut[u8]) {
+    for i in 0..pixels.len() / 4 {
+        pixels[4* i + 0] = 175;
+        pixels[4* i + 1] = 175;
+        pixels[4* i + 2] = 175;
+        pixels[4* i + 3] = 255;
+    }
+}
 
-            let block_pixel = if horizontal_shift + x < HORIZONTAL_TILES * TILE_SCALE {
-                get_block_color(&blocks[blocks_ids.0 as usize], x + horizontal_shift, y)
-            } else {
-                get_block_color(
-                    &blocks[blocks_ids.1 as usize],
-                    horizontal_shift - HORIZONTAL_TILES * TILE_SCALE + x,
-                    y,
-                )
-            };
+fn draw_tile(pixels: &mut [u8], tile: &BitMap, coords: (i32, i32)) {
+    let (start_x, start_y) = coords;
 
-            pixels[4 * index + 0] = block_pixel[0];
-            pixels[4 * index + 1] = block_pixel[1];
-            pixels[4 * index + 2] = block_pixel[2];
-            pixels[4 * index + 3] = 255 as u8;
+    for y in start_y..start_y + 10 {
+        if y < 0 || y >= HEIGHT as i32 {
+            continue;
+        }
+        for x in start_x..start_x + 10 {
+            if x < 0 || x >= WIDTH as i32 {
+                continue;
+            }
+
+            let surface_index = y * WIDTH as i32 + x;
+            let tile_pixel = tile.get_pixel(x as u32 - start_x as u32, y as u32 - start_y as u32).unwrap();
+            if tile_pixel.get_red() == 132 && tile_pixel.get_green() == 126 && tile_pixel.get_blue() == 135 {
+                continue;
+            }
+            pixels[4 * surface_index as usize + 0] = tile_pixel.get_red();
+            pixels[4 * surface_index as usize + 1] = tile_pixel.get_green();
+            pixels[4 * surface_index as usize + 2] = tile_pixel.get_blue();
+            pixels[4 * surface_index as usize + 3] = 255;
         }
     }
+
 }
 
 fn draw_tiles2(
@@ -293,6 +296,7 @@ fn draw_tiles2(
     blocks: &Vec<BitMap>,
     blocks_ids: (u32, u32),
     horizontal_shift: u32,
+    tile: &BitMap,
 ) {
     let mut first_block = true;
 
@@ -315,15 +319,7 @@ fn draw_tiles2(
                                 - horizontal_shift as i32)
                     };
                     let yy = y as i32 * TILE_SCALE as i32;
-
-                    if xx < 0 || xx >= WIDTH as i32 || yy < 0 || yy >= HEIGHT as i32 {
-                        continue;
-                    }
-                    let surface_index = yy * WIDTH as i32 + xx;
-                    pixels[4 * surface_index as usize + 0] = 255;
-                    pixels[4 * surface_index as usize + 1] = 0;
-                    pixels[4 * surface_index as usize + 2] = 0;
-                    pixels[4 * surface_index as usize + 3] = 255;
+                    draw_tile(pixels, tile, (xx, yy));
                 }
             }
         }
