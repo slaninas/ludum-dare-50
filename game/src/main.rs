@@ -135,8 +135,9 @@ fn main() {
                                 *control_flow = ControlFlow::Exit;
                                 return;
                             }
-                            std::thread::sleep(Duration::from_millis(1000));
+                            // std::thread::sleep(Duration::from_millis(1000));
                             save_highscore(std::cmp::max(score, highscore));
+                            println!("HERE");
 
                             player = Player::new();
                             current_block = 9;
@@ -357,7 +358,7 @@ impl Player {
             return false;
         }
         println!("pos_y + size_y {}", self.pos_y as u32 + self.size_y);
-        if self.pos_y as u32 + self.size_y as u32 >= HEIGHT - 1{
+        if self.pos_y as u32 + self.size_y as u32 >= HEIGHT - 6{
             return false;
         }
 
