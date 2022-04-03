@@ -14,6 +14,8 @@ use rustbitmap::bitmap::rgba::Rgba;
 
 use rand::{rngs::ThreadRng, Rng};
 use std::{
+    fs::File,
+    io::Write,
     thread,
     time::{Duration, Instant},
 };
@@ -64,6 +66,8 @@ fn main() {
     let mut horizontal_shift = 0f32;
 
     let mut player = Player::new();
+
+    let mut highscore = get_highscore();
     let mut score: u64 = 0;
 
     event_loop.run(move |event, _, control_flow| {
@@ -72,6 +76,7 @@ fn main() {
         if input.update(&event) {
             if input.key_pressed(VirtualKeyCode::Escape) || input.quit() {
                 *control_flow = ControlFlow::Exit;
+                save_highscore(std::cmp::max(score, highscore));
                 return;
             } else if input.key_pressed(VirtualKeyCode::C) || input.key_held(VirtualKeyCode::C) {
                 player.jump();
@@ -96,7 +101,13 @@ fn main() {
                 );
                 player.draw(pixels.get_frame());
 
-                draw_score_lives(score, player.get_lives(), &img, pixels.get_frame());
+                draw_score_lives(
+                    score,
+                    highscore,
+                    player.get_lives(),
+                    &img,
+                    pixels.get_frame(),
+                );
 
                 let elapsed = last_update.elapsed();
                 let diff = frame_time - elapsed.as_millis() as i16;
@@ -110,6 +121,7 @@ fn main() {
 
                 if pixels.render().map_err(|e| {}).is_err() {
                     *control_flow = ControlFlow::Exit;
+                    save_highscore(std::cmp::max(score, highscore));
                     return;
                 }
                 horizontal_shift += 2.;
@@ -125,7 +137,21 @@ fn main() {
     });
 }
 
-fn draw_score_lives(score: u64, lives: u8, img: &BitMap, pixels: &mut [u8]) {
+fn save_highscore(score: u64) {
+    let mut file = File::create("highscore.txt").unwrap();
+    writeln!(&mut file, "{}", score).unwrap();
+}
+
+fn get_highscore() -> u64 {
+    match std::fs::read_to_string("highscore.txt") {
+        Ok(s) => s.split_whitespace().collect::<Vec<_>>()[0]
+            .parse::<u64>()
+            .unwrap(),
+        Err(_) => return 0,
+    }
+}
+
+fn draw_score_lives(score: u64, orig_highscore: u64, lives: u8, img: &BitMap, pixels: &mut [u8]) {
     let numericals = (score as f64).log10() as u64 + 1;
     let end = 22 * TILE_SCALE as u64;
 
@@ -140,12 +166,31 @@ fn draw_score_lives(score: u64, lives: u8, img: &BitMap, pixels: &mut [u8]) {
             )
             .unwrap();
 
+        draw_tile(pixels, &tile, (end as i32 - 10 * i as i32, 21 as i32));
+    }
+
+    let highscore = std::cmp::max(score, orig_highscore);
+
+    let numericals = (highscore as f64).log10() as u64 + 1;
+    let end = 22 * TILE_SCALE as u64;
+
+    for i in 0..numericals {
+        let remainer = (highscore / 10u64.pow(i as u32)) % 10;
+        let tile = img
+            .crop(
+                (200 + 10 * remainer) as u32,
+                0,
+                (200 + 10 * (remainer + 1)) as u32,
+                10,
+            )
+            .unwrap();
+
         draw_tile(pixels, &tile, (end as i32 - 10 * i as i32, 10 as i32));
     }
 
     let heart = img.crop(40, 0, 50, 10).unwrap();
     for i in 0..lives {
-        draw_tile(pixels, &heart, (end as i32 - 10 * i as i32, 21 as i32));
+        draw_tile(pixels, &heart, (end as i32 - 10 * i as i32, 32 as i32));
     }
 }
 
