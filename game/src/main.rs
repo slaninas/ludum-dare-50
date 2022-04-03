@@ -145,7 +145,8 @@ impl Player {
         let bottom_right = (self.pos_x as u32 + self.size_x, self.pos_y as u32 + self.size_y);
 
         let bottom_left_pixel = get_pixel(bottom_left, blocks, blocks_ids, horizontal_shift as u32);
-        if same_rgb(bottom_left_pixel, 255, 255, 255) {
+        let bottom_right_pixel = get_pixel(bottom_right, blocks, blocks_ids, horizontal_shift as u32);
+        if same_rgb(bottom_left_pixel, 255, 255, 255) || same_rgb(bottom_right_pixel, 255, 255, 255) {
             self.pos_y -= self.speed_y;
             self.speed_y = 0.0;
             self.on_ground = true;
