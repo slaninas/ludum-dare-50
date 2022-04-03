@@ -73,13 +73,13 @@ fn main() {
     let mut last_update = Instant::now();
     let frame_time = (1000.0 / 60.0) as i16;
 
-    let mut blocks = vec![
+    let blocks = vec![
         BitMap::read("test.bmp").unwrap(),
         BitMap::read("test3.bmp").unwrap(),
     ];
 
     let max_blocks = 4;
-    let mut blocks = load_blocks(max_blocks);
+    let blocks = load_blocks(max_blocks);
 
     let img = BitMap::read("img.bmp").unwrap();
     let splash_img = BitMap::read("splash.bmp").unwrap();
@@ -101,7 +101,7 @@ fn main() {
     let mut last_played = Instant::now();
     let mut last_speedup_sound = Instant::now();
 
-    let mut highscore = get_highscore();
+    let highscore = get_highscore();
     let mut score: u64 = 0;
 
     let mut state = State::SPLASH;
@@ -314,7 +314,7 @@ fn load_blocks(num_maps: u32) -> Vec<BitMap> {
 
     let mut result = vec![];
     for i in 0..num_maps {
-        let mut block = blocks
+        let block = blocks
             .crop(i * HORIZONTAL_TILES, 0, (i + 1) * HORIZONTAL_TILES, 16)
             .unwrap();
         let mut block_inverted = BitMap::new(48, 16);
@@ -322,7 +322,7 @@ fn load_blocks(num_maps: u32) -> Vec<BitMap> {
         for y in 0..16 {
             for x in 0..HORIZONTAL_TILES {
                 let pixel = block.get_pixel(x, 16 - y - 1).unwrap();
-                block_inverted.set_pixel(x, y, *pixel);
+                block_inverted.set_pixel(x, y, *pixel).unwrap();
             }
         }
 
@@ -341,7 +341,6 @@ struct Player {
 
     jump_info: JumpInfo,
     tile: BitMap,
-    lives: u8,
 }
 
 struct JumpInfo {
@@ -367,7 +366,6 @@ impl Player {
                 jump_start: Instant::now(),
             },
             tile,
-            lives: 3,
         }
     }
 
