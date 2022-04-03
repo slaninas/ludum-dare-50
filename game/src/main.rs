@@ -95,7 +95,7 @@ fn main() {
                 );
                 player.draw(pixels.get_frame());
 
-                draw_score(score, &img, pixels.get_frame());
+                draw_score_lives(score, player.get_lives(), &img, pixels.get_frame());
 
                 let elapsed = last_update.elapsed();
                 let diff = frame_time - elapsed.as_millis() as i16;
@@ -124,7 +124,8 @@ fn main() {
     });
 }
 
-fn draw_score(score: u64, img: &BitMap, pixels: &mut [u8]) {
+
+fn draw_score_lives(score: u64, lives: u8, img: &BitMap, pixels: &mut [u8]) {
     let numericals = (score as f64).log10() as u64 + 1;
     let end = 22 * TILE_SCALE as u64;
 
@@ -132,10 +133,14 @@ fn draw_score(score: u64, img: &BitMap, pixels: &mut [u8]) {
         let remainer = (score / 10u64.pow(i as u32)) % 10;
         let tile = img.crop((100 + 10 * remainer) as u32, 0, (100 + 10 * (remainer + 1)) as u32, 10).unwrap();
 
-
         draw_tile(pixels, &tile, (end as i32 - 10 * i as i32, 10 as i32));
-
     }
+
+    let heart = img.crop(40, 0, 50, 10).unwrap();
+    for i in 0..lives {
+        draw_tile(pixels, &heart, (end as i32 - 10 * i as i32, 21 as i32));
+    }
+
 
 }
 
@@ -148,6 +153,7 @@ struct Player {
 
     jump_info: JumpInfo,
     tile: BitMap,
+    lives: u8,
 }
 
 struct JumpInfo {
@@ -173,6 +179,7 @@ impl Player {
                 jump_start: Instant::now(),
             },
             tile,
+            lives: 3,
         }
     }
 
@@ -238,12 +245,16 @@ impl Player {
                     || same_rgb(&bottom_right_pixel, &Rgb::new(99, 155, 255))
                 {
                     self.pos_x += 5.0;
+                    if self.pos_x >= 60.0 {
+                        self.pos_x = 59.0;
+                    }
                 }
                 else if same_rgb(&bottom_left_pixel, &Rgb::new(217, 87, 99))
                     || same_rgb(&bottom_right_pixel, &Rgb::new(217, 87, 99))
                 {
                     self.pos_x -= 5.0;
                     self.speed_y -= 1.5;
+                    self.lives -= 1;
                 }
 
                 break;
@@ -259,6 +270,11 @@ impl Player {
     fn draw(&self, pixels: &mut [u8]) {
         draw_tile(pixels, &self.tile, (self.pos_x as i32, self.pos_y as i32));
     }
+
+    fn get_lives(&self) -> u8 {
+        ((self.pos_x as u32  - 30) / 3 + 1) as u8
+    }
+
 }
 
 fn is_solid(rgb: &Rgb) -> bool {
