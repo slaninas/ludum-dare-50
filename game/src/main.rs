@@ -104,6 +104,9 @@ fn main() {
                         state = State::RUNNING;
                         score = 0;
                         player = Player::new();
+                        current_block = 0;
+                        next_block = get_next_block(max_blocks);
+                        horizontal_shift = 0.0;
                     }
                 }
             }
@@ -135,6 +138,11 @@ fn main() {
                             }
                             std::thread::sleep(Duration::from_millis(1000));
                             save_highscore(std::cmp::max(score, highscore));
+
+                            player = Player::new();
+                            current_block = 9;
+                            next_block = get_next_block(max_blocks);
+                            horizontal_shift = 0.0;
                             return;
                         } else {
                             clear(pixels.get_frame());
@@ -394,6 +402,10 @@ impl Player {
     fn get_lives(&self) -> u8 {
         ((self.pos_x as u32 - 30) / 3 + 1) as u8
     }
+}
+
+fn get_next_block(max_blocks: u32) -> u32 {
+    0
 }
 
 fn get_pixels(
