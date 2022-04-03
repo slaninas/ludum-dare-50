@@ -78,7 +78,10 @@ fn main() {
 
         match event {
             Event::MainEventsCleared => {
-                player.update(&blocks, (current_block, next_block), horizontal_shift);
+                let alive = player.update(&blocks, (current_block, next_block), horizontal_shift);
+                if !alive {
+                    panic!("RIP");
+                }
                 clear(pixels.get_frame());
 
                 draw_tiles(
@@ -178,7 +181,7 @@ impl Player {
 
         self.pos_x -= 0.01;
 
-        if self.pos_x < 0.0 {
+        if self.pos_x <= 0.0 {
             return false;
         }
 
