@@ -382,8 +382,8 @@ impl Player {
 
         self.pos_x -= 0.01;
 
-        if self.pos_x <= 0.0 {
-            return Update::NOTHING;
+        if self.pos_x <= MIN_PLAYER_X as f32 {
+            return Update::DEAD;
         }
         if self.pos_y as u32 + self.size_y as u32 >= HEIGHT - 6 {
             return Update::DEAD;
