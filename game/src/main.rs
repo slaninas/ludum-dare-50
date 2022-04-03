@@ -12,10 +12,13 @@ use winit_input_helper::WinitInputHelper;
 use rustbitmap::bitmap::image::BitMap;
 use rustbitmap::bitmap::rgba::Rgba;
 
+use rodio::source::{SineWave, Source};
+use rodio::{Decoder, OutputStream, Sink};
+
 use rand::{rngs::ThreadRng, Rng};
 use std::{
     fs::File,
-    io::Write,
+    io::{BufReader, Write},
     thread,
     time::{Duration, Instant},
 };
@@ -25,6 +28,8 @@ const WIDTH: u32 = 240;
 const HEIGHT: u32 = 160;
 const TILE_SCALE: u32 = 10;
 const HORIZONTAL_TILES: u32 = 48;
+const MAX_PLAYER_X: u32 =  59;
+const MIN_PLAYER_X: u32 =  30;
 
 #[derive(Debug)]
 enum State {
@@ -66,18 +71,33 @@ fn main() {
         BitMap::read("test3.bmp").unwrap(),
     ];
 
-    let max_blocks = 3;
+    let max_blocks = 1;
     let mut blocks = load_blocks(max_blocks);
 
     let img = BitMap::read("img.bmp").unwrap();
     let splash_img = BitMap::read("splash.bmp").unwrap();
     let gameover_img = BitMap::read("gameover.bmp").unwrap();
     let mut current_block = 0;
-    let mut next_block = 1;
+    let mut next_block = get_next_block(max_blocks);
 
     let mut horizontal_shift = 0f32;
 
     let mut player = Player::new();
+
+    let (_stream, stream_handle) = OutputStream::try_default().unwrap();
+    // let file = File::open("speedup.wav").unwrap();
+    // let source = Decoder::new(file).unwrap();
+    // let source = Decoder::new(file).unwrap();
+    // let converted = source.convert_samples();
+
+    let (_stream, stream_handle) = OutputStream::try_default().unwrap();
+    let sink = Sink::try_new(&stream_handle).unwrap();
+
+    // Add a dummy source of the sake of the example.
+    let source = SineWave::new(440.0)
+        .take_duration(Duration::from_secs_f32(1.25))
+        .amplify(0.20);
+    let mut last_played = Instant::now();
 
     let mut highscore = get_highscore();
     let mut score: u64 = 0;
@@ -122,7 +142,7 @@ fn main() {
                             *control_flow = ControlFlow::Exit;
                             return;
                         }
-                    },
+                    }
                     State::RUNNING => {
                         score += 1;
                         let alive =
@@ -145,6 +165,16 @@ fn main() {
                             horizontal_shift = 0.0;
                             return;
                         } else {
+                            let sound_duration = 2000 as u64;
+                            if last_played.elapsed().as_millis() as u64 > sound_duration {
+                                let freq_mult = (player.pos_x - MIN_PLAYER_X as f32) / (MAX_PLAYER_X as f32 - MIN_PLAYER_X as f32);
+                                println!("freq_mult: {}", freq_mult);
+                                let source = SineWave::new(1000.0 * (1.0-freq_mult).sqrt())
+                                    .take_duration(Duration::from_millis(100))
+                                    .amplify(0.20);
+                                sink.append(source);
+                                last_played = Instant::now();
+                            }
                             clear(pixels.get_frame());
 
                             draw_tiles(
@@ -187,16 +217,10 @@ fn main() {
                                 next_block = (current_block + 1) % max_blocks;
                             }
                         }
-                    },
+                    }
                     State::GAMEOVER => {
                         draw_image(pixels.get_frame(), &gameover_img);
-                            draw_score_lives(
-                                score,
-                                highscore,
-                                0,
-                                &img,
-                                pixels.get_frame(),
-                            );
+                        draw_score_lives(score, highscore, 0, &img, pixels.get_frame());
                         if pixels.render().map_err(|e| {}).is_err() {
                             *control_flow = ControlFlow::Exit;
                             return;
@@ -208,7 +232,6 @@ fn main() {
         }
     });
 }
-
 
 fn save_highscore(score: u64) {
     let mut file = File::create("highscore.txt").unwrap();
@@ -358,11 +381,11 @@ impl Player {
             return false;
         }
         println!("pos_y + size_y {}", self.pos_y as u32 + self.size_y);
-        if self.pos_y as u32 + self.size_y as u32 >= HEIGHT - 6{
+        if self.pos_y as u32 + self.size_y as u32 >= HEIGHT - 6 {
             return false;
         }
 
-        if self.pos_x < 30.0 {
+        if self.pos_x < MIN_PLAYER_X as f32 {
             self.pos_y += 3.0;
             self.pos_x -= 3.0;
             return true;
@@ -386,8 +409,8 @@ impl Player {
 
                 if pixels.iter().any(|p| same_rgb(&p, &Rgb::new(99, 155, 255))) {
                     self.pos_x += 5.0;
-                    if self.pos_x >= 60.0 {
-                        self.pos_x = 59.0;
+                    if self.pos_x > MAX_PLAYER_X as f32 {
+                        self.pos_x = MAX_PLAYER_X as f32;
                     }
                 } else if pixels.iter().any(|p| same_rgb(&p, &Rgb::new(217, 87, 99))) {
                     return false;
@@ -407,7 +430,7 @@ impl Player {
     }
 
     fn get_lives(&self) -> u8 {
-        ((self.pos_x as u32 - 30) / 3 + 1) as u8
+        ((self.pos_x as u32 - MIN_PLAYER_X) / 3 + 1) as u8
     }
 }
 
@@ -507,7 +530,7 @@ fn clear(pixels: &mut [u8]) {
     }
 }
 
-fn draw_image(pixels: &mut[u8], image: &BitMap) {
+fn draw_image(pixels: &mut [u8], image: &BitMap) {
     println!("pixels len {}", pixels.len());
 
     for y in 0..HEIGHT {
