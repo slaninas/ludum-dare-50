@@ -71,6 +71,7 @@ fn main() {
 
     let img = BitMap::read("img.bmp").unwrap();
     let splash_img = BitMap::read("splash.bmp").unwrap();
+    let gameover_img = BitMap::read("gameover.bmp").unwrap();
     let mut current_block = 0;
     let mut next_block = 1;
 
@@ -101,7 +102,8 @@ fn main() {
                     State::RUNNING => player.jump(),
                     State::GAMEOVER => {
                         state = State::RUNNING;
-                        score = 0
+                        score = 0;
+                        player = Player::new();
                     }
                 }
             }
@@ -124,52 +126,66 @@ fn main() {
                         let alive =
                             player.update(&blocks, (current_block, next_block), horizontal_shift);
                         if !alive {
-                            panic!("RIP");
-                        }
-                        clear(pixels.get_frame());
-
-                        draw_tiles(
-                            pixels.get_frame(),
-                            &blocks,
-                            (current_block, next_block),
-                            horizontal_shift as u32,
-                            &img,
-                        );
-                        player.draw(pixels.get_frame());
-
-                        draw_score_lives(
-                            score,
-                            highscore,
-                            player.get_lives(),
-                            &img,
-                            pixels.get_frame(),
-                        );
-
-                        let elapsed = last_update.elapsed();
-                        let diff = frame_time - elapsed.as_millis() as i16;
-
-                        if diff > 0 {
-                            println!("sleeping for: {} ms", diff);
-                            thread::sleep(Duration::from_millis(diff as u64));
-                        }
-
-                        last_update = Instant::now();
-
-                        if pixels.render().map_err(|e| {}).is_err() {
-                            *control_flow = ControlFlow::Exit;
+                            state = State::GAMEOVER;
+                            std::thread::sleep(Duration::from_millis(300));
+                            draw_image(pixels.get_frame(), &gameover_img);
+                            if pixels.render().map_err(|e| {}).is_err() {
+                                *control_flow = ControlFlow::Exit;
+                                return;
+                            }
+                            std::thread::sleep(Duration::from_millis(1000));
                             save_highscore(std::cmp::max(score, highscore));
                             return;
-                        }
-                        horizontal_shift += 2.;
-                        if horizontal_shift >= (HORIZONTAL_TILES * TILE_SCALE) as f32 {
-                            horizontal_shift = 0.0;
-                            current_block = next_block;
-                            // TODO: enable random blocks
-                            next_block = (current_block + 1) % max_blocks;
+                        } else {
+                            clear(pixels.get_frame());
+
+                            draw_tiles(
+                                pixels.get_frame(),
+                                &blocks,
+                                (current_block, next_block),
+                                horizontal_shift as u32,
+                                &img,
+                            );
+                            player.draw(pixels.get_frame());
+
+                            draw_score_lives(
+                                score,
+                                highscore,
+                                player.get_lives(),
+                                &img,
+                                pixels.get_frame(),
+                            );
+
+                            let elapsed = last_update.elapsed();
+                            let diff = frame_time - elapsed.as_millis() as i16;
+
+                            if diff > 0 {
+                                println!("sleeping for: {} ms", diff);
+                                thread::sleep(Duration::from_millis(diff as u64));
+                            }
+
+                            last_update = Instant::now();
+
+                            if pixels.render().map_err(|e| {}).is_err() {
+                                *control_flow = ControlFlow::Exit;
+                                save_highscore(std::cmp::max(score, highscore));
+                                return;
+                            }
+                            horizontal_shift += 2.;
+                            if horizontal_shift >= (HORIZONTAL_TILES * TILE_SCALE) as f32 {
+                                horizontal_shift = 0.0;
+                                current_block = next_block;
+                                // TODO: enable random blocks
+                                next_block = (current_block + 1) % max_blocks;
+                            }
                         }
                     },
                     State::GAMEOVER => {
-
+                        draw_image(pixels.get_frame(), &gameover_img);
+                        if pixels.render().map_err(|e| {}).is_err() {
+                            *control_flow = ControlFlow::Exit;
+                            return;
+                        }
                     }
                 }
             }
@@ -324,6 +340,10 @@ impl Player {
         self.pos_x -= 0.01;
 
         if self.pos_x <= 0.0 {
+            return false;
+        }
+        println!("pos_y + size_y {}", self.pos_y as u32 + self.size_y);
+        if self.pos_y as u32 + self.size_y as u32 >= HEIGHT - 1{
             return false;
         }
 
