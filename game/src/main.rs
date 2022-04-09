@@ -95,7 +95,7 @@ fn main() {
     let mut last_played = Instant::now();
     let mut last_speedup_sound = Instant::now();
 
-    let highscore = get_highscore();
+    let mut highscore = get_highscore();
     let mut score: u64 = 0;
 
     let mut state = State::SPLASH;
@@ -145,6 +145,8 @@ fn main() {
 
                             Update::DEAD => {
                                 state = State::GAMEOVER;
+                                save_highscore(std::cmp::max(score, highscore));
+                                highscore = get_highscore();
 
                                 let gameover_file = File::open("gameover.wav").unwrap();
                                 let source = Decoder::new(gameover_file).unwrap();
@@ -157,7 +159,6 @@ fn main() {
                                     return;
                                 }
                                 // std::thread::sleep(Duration::from_millis(1000));
-                                save_highscore(std::cmp::max(score, highscore));
 
                                 player = Player::new();
                                 current_block = 9;
